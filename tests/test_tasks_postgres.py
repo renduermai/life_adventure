@@ -580,3 +580,54 @@ def test_dashboard_user_data_and_updates(camp):
         assert '还没有进行中的主线' in page.text
         client.cookies.clear()
         assert '登录角色账号' in client.get('/').text
+
+def test_stage19_complete_cycle_and_export(camp):
+    import io,json,zipfile
+    from pwdlib import PasswordHash
+    from app.modules.activity.models import ActivityLog
+    user_id=camp['user']; headers={'origin':'http://testserver'}
+    with camp['sessions'].begin() as db:
+        user=db.get(User,user_id); user.password_hash=PasswordHash.recommended().hash('test-password-only-123'); username=user.username
+    with browser_client(camp) as client:
+        assert client.get('/data').status_code==200
+        response=client.post('/quests/create',data={'title':'闭环主线'},headers=headers)
+        assert response.status_code==200
+        quest_path=response.url.path
+        response=client.post(quest_path+'/milestones',data={'title':'闭环里程碑'},headers=headers)
+        assert response.status_code==200
+        with camp['sessions'].begin() as db:
+            quest_id=UUID(quest_path.rsplit('/',1)[1]); milestone=db.scalar(select(Milestone).where(Milestone.user_id==user_id,Milestone.main_quest_id==quest_id))
+            milestone_id=milestone.id
+        task_form={'request_id':str(uuid4()),'title':'闭环副本','priority':'normal','repeat_rule':'none','main_quest_id':str(quest_id),'milestone_id':str(milestone_id)}
+        response=client.post('/tasks/create',data=task_form,headers=headers); assert response.status_code==200
+        task_path=response.url.path; task_id=UUID(task_path.rsplit('/',1)[1])
+        focus_id=str(uuid4())
+        assert client.post('/focus/start',data={'request_id':focus_id,'mode':'elapsed','task_id':str(task_id)},headers=headers).status_code==200
+        assert client.post('/focus/finish',data={'session_id':focus_id},headers=headers).status_code==200
+        assert client.post(task_path+'/status',data={'request_id':str(uuid4()),'version':'1','status':'completed'},headers=headers).status_code==200
+        page=client.get('/'); assert '10 XP' in page.text and '5 金币' in page.text and '闭环主线' in page.text
+        assert client.get('/journal?period=day').status_code==200
+        response=client.post('/data/export',headers=headers); assert response.status_code==200
+        archive=zipfile.ZipFile(io.BytesIO(response.content)); payload=json.loads(archive.read('adventure-camp.json'))
+        assert any(x['id']==str(task_id) for x in payload['tables']['tasks'])
+        assert len(payload['tables']['reward_entries'])==1
+        assert len(payload['tables']['activity_logs'])==1
+        assert 'password_hash' not in json.dumps(payload) and 'login_sessions' not in payload['tables']
+        assert 'csv/tasks.csv' in archive.namelist()
+        assert client.post('/data/export').status_code==403
+        assert client.post(task_path+'/delete',data={'request_id':str(uuid4()),'version':'2'},headers=headers).status_code==200
+        assert '闭环副本' in client.get('/data').text
+        assert client.post(task_path+'/restore',data={'request_id':str(uuid4()),'version':'3'},headers=headers).status_code==200
+        assert client.post('/account/logout',headers=headers).status_code==200
+        assert client.post('/account/login',data={'username':username,'password':'test-password-only-123'},headers=headers).status_code==200
+        page=client.get('/'); assert '10 XP' in page.text and '闭环主线' in page.text
+        with camp['sessions'].begin() as db:
+            assert db.scalar(select(func.count()).select_from(ActivityLog).where(ActivityLog.user_id==user_id))==1
+        client.cookies.clear()
+        assert client.post('/data/export',headers=headers,follow_redirects=False).status_code==303
+    # A fresh application instance and fresh authenticated client read committed data.
+    with browser_client(camp) as restarted:
+        restarted.cookies.clear()
+        assert restarted.post('/account/login',data={'username':username,'password':'test-password-only-123'},headers=headers).status_code==200
+        assert '10 XP' in restarted.get('/').text
+        assert '闭环副本' in restarted.get(task_path).text
