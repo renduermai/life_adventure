@@ -89,7 +89,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse)
     def camp(request: Request):
-        return render(request, "camp")
+        if database.sessions is None:
+            return render(request, "camp")
+        from app.modules.identity.service import current_user
+        from app.modules.dashboard.service import dashboard
+        with database.transaction() as db:
+            user = current_user(db, request.cookies.get("camp_session"))
+            if not user:
+                return render(request, "camp")
+            data = dashboard(db, user)
+            return templates.TemplateResponse(request=request, name="dashboard.html", context={
+                "pages": PAGES, "page": "camp", "current": PAGES["camp"],
+                "app_name": settings.app_name, "user": user, "data": data})
 
     @app.get("/journey", response_class=HTMLResponse)
     def journey(request: Request):

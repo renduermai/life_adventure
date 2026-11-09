@@ -557,3 +557,26 @@ def test_reward_parent_child_reopen(camp):
     with camp['sessions'].begin() as db:
         assert growth.balances(db,uid)==(0,0)
         assert service.get_task(db,uid,parent).status=='todo'
+
+def test_dashboard_user_data_and_updates(camp):
+    from app.modules.activity.models import ActivityLog
+    from zoneinfo import ZoneInfo
+    today=datetime.now(ZoneInfo('Asia/Shanghai')).date()
+    task=create(camp,title='今日测试副本',due_date=today.isoformat(),main_quest_id=str(camp['quest']))
+    with camp['sessions'].begin() as db:
+        db.add(ActivityLog(user_id=camp['user'],occurred_at=datetime.now(timezone.utc),duration_seconds=240,category='测试',note='今日历练'))
+    with browser_client(camp) as client:
+        page=client.get('/')
+        assert page.status_code==200 and '测试冒险者' in page.text and '今日测试副本' in page.text and '今日历练' in page.text
+        assert '0 XP' in page.text and '测试主线' in page.text
+        change(camp,task)
+        page=client.get('/')
+        assert '10 XP' in page.text and '5 金币' in page.text and '今日测试副本' not in page.text
+        with camp['sessions'].begin() as db:
+            db.add(LoginSession(user_id=camp['other'],token_hash=token_hash(str(camp['other'])),expires_at=datetime.now(timezone.utc)+timedelta(days=1)))
+        client.cookies.set('camp_session',str(camp['other']))
+        page=client.get('/')
+        assert '今日历练' not in page.text and '测试主线' not in page.text
+        assert '还没有进行中的主线' in page.text
+        client.cookies.clear()
+        assert '登录角色账号' in client.get('/').text
