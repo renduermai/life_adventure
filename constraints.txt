@@ -1,5 +1,9 @@
 # Transitive versions observed on Windows / CPython 3.11.9.
 # Platform-dependent dependencies are not installed merely by being listed here.
+argon2-cffi==25.1.0
+argon2-cffi-bindings==26.1.0
+cffi==2.1.1
+pycparser==3.12
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.16.0

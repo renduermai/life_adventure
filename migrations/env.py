@@ -5,6 +5,8 @@ from sqlalchemy import create_engine, pool
 
 from app.core.config import load_settings, postgres_url
 from app.core.database import Base
+from app.modules.identity import models as identity_models  # noqa: F401
+from app.modules.quests import models as quest_models  # noqa: F401
 
 config = context.config
 

@@ -138,13 +138,15 @@ def test_offline_migration_generates_postgres_sql():
     reverse = Config(str(ROOT / "alembic.ini"), output_buffer=io.StringIO())
     command.downgrade(reverse, f"{EXPECTED_REVISION}:base", sql=True)
     assert "DELETE FROM alembic_version" in reverse.output_buffer.getvalue()
-    assert "DROP TABLE tasks" not in reverse.output_buffer.getvalue()
+    assert "DROP TABLE users" in reverse.output_buffer.getvalue()
 
 
-def test_migration_without_credentials_fails_safely(tmp_path, monkeypatch):
-    monkeypatch.setenv("MIGRATION_DATABASE_URL", "")
+def test_migration_with_invalid_credentials_fails_safely(tmp_path, monkeypatch):
+    # Windows drops empty environment values in child processes; an invalid
+    # explicit value reliably overrides any real local .env configuration.
+    monkeypatch.setenv("MIGRATION_DATABASE_URL", "invalid-test-connection")
     result = subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], cwd=ROOT,
                             capture_output=True, text=True, encoding="utf-8", errors="replace")
     assert result.returncode != 0
-    assert "MIGRATION_DATABASE_URL" in result.stdout + result.stderr
+    assert "invalid-test-connection" not in result.stdout + result.stderr
     assert "Traceback" not in result.stdout + result.stderr

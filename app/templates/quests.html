@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}<div class="notice" role="alert">{{ error }}</div>{% endif %}
+{% if view == 'account' %}
+  {% if user %}
+  <section class="card form-card"><h2>角色资料</h2><p class="muted">账号：{{ user.username }}</p>
+    <form method="post" action="/account/profile" class="form-stack"><label>昵称<input name="display_name" value="{{ user.display_name }}" maxlength="80" required></label><label>时区<input name="timezone" value="{{ user.timezone }}" required></label><button class="button primary">保存资料</button></form>
+    <form method="post" action="/account/logout"><button class="button secondary">退出登录</button></form>
+  </section>
+  {% else %}
+  <div class="settings-grid"><section class="card form-card"><h2>登录营地</h2><form method="post" action="/account/login" class="form-stack"><label>用户名<input name="username" autocomplete="username" required></label><label>密码<input type="password" name="password" autocomplete="current-password" required></label><button class="button primary">登录</button></form></section>
+  <section class="card form-card"><h2>创建角色账号</h2><p class="muted">当前版本支持创建一个账号。</p><form method="post" action="/account/register" class="form-stack"><label>用户名<input name="username" minlength="3" maxlength="64" autocomplete="username" required></label><label>昵称<input name="display_name" maxlength="80" required></label><label>密码（至少 10 位）<input type="password" name="password" minlength="10" maxlength="128" autocomplete="new-password" required></label><button class="button secondary">创建账号</button></form></section></div>
+  {% endif %}
+{% elif view == 'list' %}
+  <section class="card form-card"><h2>创建主线</h2><form method="post" action="/quests/create" class="form-stack"><label>标题<input name="title" maxlength="160" required></label><label>描述<textarea name="description" maxlength="5000"></textarea></label><div class="form-row"><label>开始日期<input type="date" name="start_date"></label><label>预计完成日期<input type="date" name="due_date"></label></div><button class="button primary">创建主线</button></form></section>
+  <div class="section-heading"><h2>我的主线</h2><span>{{ user.display_name }} 的冒险</span></div>
+  {% for quest in quests %}<article class="notice"><div><h3>{{ quest.title }}</h3><p>{{ '已删除' if quest.deleted_at else {'active':'进行中','paused':'已暂停','completed':'已完成','archived':'已归档'}[quest.status] }}</p></div>{% if quest.deleted_at %}<form method="post" action="/quests/{{ quest.id }}/restore"><button class="button secondary">恢复</button></form>{% else %}<a class="text-link" href="/quests/{{ quest.id }}">查看详情 →</a>{% endif %}</article>{% else %}<p class="muted">还没有主线，可以从上方创建一条。</p>{% endfor %}
+{% else %}
+  <p><a class="text-link" href="/quests">← 返回主线列表</a></p>
+  <section class="card form-card"><h2>{{ quest.title }}</h2><p class="muted">主线进度：{% if progress is none %}尚未配置里程碑{% else %}{{ progress }}%（已完成里程碑 / 未删除里程碑）{% endif %}</p>
+  <form method="post" action="/quests/{{ quest.id }}/edit" class="form-stack"><label>标题<input name="title" value="{{ quest.title }}" maxlength="160" required></label><label>描述<textarea name="description" maxlength="5000">{{ quest.description }}</textarea></label><div class="form-row"><label>开始日期<input type="date" name="start_date" value="{{ quest.start_date or '' }}"></label><label>预计完成日期<input type="date" name="due_date" value="{{ quest.due_date or '' }}"></label></div><button class="button primary">保存主线</button></form>
+  <form method="post" action="/quests/{{ quest.id }}/status" class="form-row"><label>状态<select name="status">{% for key, label in [('active','进行中'),('paused','已暂停'),('completed','已完成'),('archived','已归档')] %}<option value="{{ key }}" {% if quest.status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><button class="button secondary">更新状态</button></form>
+  <form method="post" action="/quests/{{ quest.id }}/delete"><button class="button secondary">删除主线（可恢复）</button></form></section>
+  <div class="section-heading"><h2>里程碑</h2><span>可以随时调整目标和节奏</span></div>
+  <section class="card form-card"><h3>添加里程碑</h3><form method="post" action="/quests/{{ quest.id }}/milestones" class="form-stack"><label>标题<input name="title" maxlength="160" required></label><label>描述<textarea name="description" maxlength="5000"></textarea></label><label>预计日期<input type="date" name="due_date"></label><button class="button primary">添加里程碑</button></form></section>
+  {% for item in milestones %}<article class="card form-card milestone"><h3>{{ item.title }} {% if item.deleted_at %}（已删除）{% endif %}</h3>
+  {% if item.deleted_at %}<form method="post" action="/quests/{{ quest.id }}/milestones/{{ item.id }}/restore"><button class="button secondary">恢复里程碑</button></form>{% else %}
+  <form method="post" action="/quests/{{ quest.id }}/milestones/{{ item.id }}/edit" class="form-stack"><label>标题<input name="title" value="{{ item.title }}" maxlength="160" required></label><label>描述<textarea name="description" maxlength="5000">{{ item.description }}</textarea></label><label>预计日期<input type="date" name="due_date" value="{{ item.due_date or '' }}"></label><button class="button secondary">保存修改</button></form>
+  <div class="form-row"><form method="post" action="/quests/{{ quest.id }}/milestones/{{ item.id }}/toggle"><input type="hidden" name="status" value="{{ 'pending' if item.status == 'completed' else 'completed' }}"><button class="button secondary">{{ '撤销完成' if item.status == 'completed' else '标记完成' }}</button></form><form method="post" action="/quests/{{ quest.id }}/milestones/{{ item.id }}/delete"><button class="button secondary">删除（可恢复）</button></form></div>{% endif %}</article>{% else %}<p class="muted">还没有里程碑。</p>{% endfor %}
+  {% if events is defined %}<section class="card form-card"><h2>主线历史</h2>{% for event in events %}<p>{{ event.action }}{% if event.detail %}：{{ event.detail }}{% endif %} · {{ event.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</p>{% else %}<p class="muted">暂无历史记录。</p>{% endfor %}</section>{% endif %}
+{% endif %}
+{% endblock %}
