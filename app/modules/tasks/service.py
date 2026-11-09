@@ -121,7 +121,10 @@ def reopen(db: Session, task: Task, target: str = "todo") -> None:
     if completion is None:
         raise TaskError("完成记录缺失，请联系维护者", 409)
     task.status, task.completed_at = target, None
-    event(db, task, "reopened", {"status": target}, completion.id)
+    reversal = event(db, task, "reopened", {"status": target}, completion.id)
+    db.flush()
+    from app.modules.growth.service import reverse
+    reverse(db, task, completion, reversal)
 
 
 def reopen_parent(db: Session, task: Task) -> None:
@@ -225,7 +228,10 @@ def change_task(db: Session, task: Task, action: str, data: dict, timezone_name:
                 raise TaskError("请先完成全部未删除的子任务")
             task.status, task.completed_at = target, datetime.now(timezone.utc)
             task.completion_round += 1
-            event(db, task, "completed", snapshot(task))
+            completion = event(db, task, "completed", snapshot(task))
+            db.flush()
+            from app.modules.growth.service import grant
+            grant(db, task, completion)
             generate_next(db, task, timezone_name)
         else:
             if task.status == "completed":

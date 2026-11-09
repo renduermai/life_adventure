@@ -1,5 +1,10 @@
 # 数据模型草案
 
+## 阶段 1.7 更新
+
+0007_rewards 新增 reward_settings 与 reward_entries，并为 task_events 增加 (id,user_id) 唯一约束。奖励引用任务与事件，冲正引用同用户原始流水；迁移事务补发当前完成轮次。
+
+
 ## 阶段 1.6 更新
 
 0006_activity 在 activity_logs 增加版本与用户归属唯一约束，并新增 activity_events 审计表。原始计时会话、区间与修改后的手记记录分别保留。

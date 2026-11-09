@@ -10,6 +10,8 @@
 
 用户已授权并请求完成 1.6；1.7 尚未授权。
 
+用户已授权并请求完成 1.7，1.8 尚未授权。
+
 ## 开始工作前
 
 先读取本文件、README.md 以及 docs/ 下的 ROADMAP.md、ARCHITECTURE.md、DATA_MODEL.md、PROGRESS.md、DECISIONS.md、ACCEPTANCE.md。文档与实际代码冲突时先报告，不凭猜测修改。

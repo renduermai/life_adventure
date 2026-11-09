@@ -496,3 +496,64 @@ def test_journal_timer_http_and_validation(camp):
         assert client.get('/journal?period=day&deleted=true').status_code==200
         assert client.post(f'/journal/{log_id}/restore',data={'version':'2'},headers=headers).status_code==200
         assert client.post('/journal/create').status_code==403
+
+def test_reward_completion_reversal_and_repeat(camp):
+    from app.modules.growth import service as growth
+    from app.modules.growth.models import RewardEntry
+    uid=camp['user']; task=create(camp)
+    change(camp,task)
+    with camp['sessions'].begin() as db:
+        assert growth.balances(db,uid)==(10,5)
+        rule=growth.settings(db,uid); rule.xp_per_task=25; rule.coins_per_task=3; rule.rule_version+=1
+    change(camp,task,data={'status':'todo'})
+    with camp['sessions'].begin() as db: assert growth.balances(db,uid)==(0,0)
+    change(camp,task)
+    with camp['sessions'].begin() as db:
+        assert growth.balances(db,uid)==(25,3)
+        assert len(list(db.scalars(select(RewardEntry).where(RewardEntry.user_id==uid))))==3
+    change(camp,task,'delete')
+    with camp['sessions'].begin() as db: assert growth.balances(db,uid)==(25,3)
+
+
+def test_reward_concurrent_completion_and_rollback(camp,monkeypatch):
+    from app.modules.growth import service as growth
+    from app.modules.growth.models import RewardEntry
+    uid=camp['user']; task=create(camp); req=uuid4()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert list(pool.map(lambda _: change(camp,task,request_id=req,version=1),range(2)))==[task,task]
+    with camp['sessions'].begin() as db: assert growth.balances(db,uid)==(10,5)
+    another=create(camp)
+    def fail(*args,**kwargs): raise RuntimeError('injected reward failure')
+    monkeypatch.setattr(growth,'grant',fail)
+    with pytest.raises(RuntimeError): change(camp,another)
+    with camp['sessions'].begin() as db:
+        assert service.get_task(db,uid,another).status=='todo'
+        assert growth.balances(db,uid)==(10,5)
+
+
+def test_reward_backfill_and_access(camp):
+    from app.modules.growth import service as growth
+    from app.modules.growth.models import RewardEntry
+    uid=camp['user']; task=create(camp)
+    change(camp,task)
+    with camp['sessions'].begin() as db:
+        assert growth.backfill_current(db,uid)==1
+        assert growth.backfill_current(db,uid)==1
+        assert growth.balances(db,uid)==(10,5)
+        assert growth.balances(db,camp['other'])==(0,0)
+    with browser_client(camp) as client:
+        assert client.get('/growth').status_code==200
+        assert '10 XP' in client.get('/growth').text
+        assert client.post('/growth/settings',data={'xp':'30','coins':'8'},headers={'origin':'http://testserver'}).status_code==200
+        assert client.post('/growth/settings',data={'xp':'-1','coins':'8'},headers={'origin':'http://testserver'}).status_code==200
+        assert client.post('/growth/settings',data={'xp':'30','coins':'8'}).status_code==403
+
+def test_reward_parent_child_reopen(camp):
+    from app.modules.growth import service as growth
+    uid=camp['user']; parent=create(camp); child=create(camp,parent_task_id=str(parent))
+    change(camp,child); change(camp,parent)
+    with camp['sessions'].begin() as db: assert growth.balances(db,uid)==(20,10)
+    change(camp,child,data={'status':'todo'})
+    with camp['sessions'].begin() as db:
+        assert growth.balances(db,uid)==(0,0)
+        assert service.get_task(db,uid,parent).status=='todo'

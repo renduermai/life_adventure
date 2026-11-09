@@ -48,6 +48,7 @@ class Task(Base):
 class TaskEvent(Base):
     __tablename__ = "task_events"
     __table_args__ = (
+        UniqueConstraint("id", "user_id", name="uq_task_event_id_user"),
         ForeignKeyConstraint(["task_id", "user_id"], ["tasks.id", "tasks.user_id"], name="fk_task_event_owner"),
         Index("uq_task_completion_event", "task_id", "completion_round", "kind", unique=True,
               postgresql_where=text("kind IN ('completed','reopened')")),
