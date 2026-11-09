@@ -1,0 +1,25 @@
+# Transitive versions observed on Windows / CPython 3.11.9.
+# Platform-dependent dependencies are not installed merely by being listed here.
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.16.0
+certifi==2026.10.23
+click==8.5.1
+colorama==0.4.6
+h11==0.16.0
+httpcore==1.0.9
+idna==3.20
+iniconfig==2.3.1
+mako==1.4.3
+markupsafe==3.0.4
+opentelemetry-api==1.45.2
+packaging==26.3
+pluggy==1.7.0
+psycopg-binary==3.3.8
+pydantic==2.14.3
+pydantic-core==2.50.4
+pygments==2.21.0
+python-dotenv==1.2.4
+starlette==1.10.0
+typing-extensions==4.16.0
+typing-inspection==0.4.5
