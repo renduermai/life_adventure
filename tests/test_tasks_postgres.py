@@ -354,3 +354,88 @@ def test_http_batch_restore_stale_errors_and_atomic_rollback(camp):
         assert client.post(f"/tasks/{first}/status", data={"request_id": str(uuid4()), "version": "1", "status": "completed"}, headers=headers).status_code == 409
         assert client.post(f"/tasks/{first}/create", headers=headers).status_code == 404
         assert client.post("/tasks/create", data={"title": "missing token"}, headers=headers).status_code == 400
+
+def test_focus_timer_real_database(camp):
+    from app.modules.activity import service as focus
+    from app.modules.activity.models import ActivityLog, FocusSegment
+    from datetime import timedelta
+    task = create(camp)
+    req = uuid4()
+    with camp['sessions'].begin() as db:
+        session = focus.start(db,camp['user'],'countdown','25',task,req)
+        session.resumed_at -= timedelta(seconds=10)
+    with camp['sessions'].begin() as db:
+        session = focus.transition(db,camp['user'],req,'pause')
+        assert session.status == 'paused' and session.accumulated_seconds >= 10
+    with camp['sessions'].begin() as db:
+        assert focus.start(db,camp['user'],'countdown','25',task,req).id == req
+        focus.transition(db,camp['user'],req,'resume')
+    with camp['sessions'].begin() as db:
+        focus.transition(db,camp['user'],req,'finish')
+    with camp['sessions'].begin() as db:
+        focus.transition(db,camp['user'],req,'finish')
+        assert db.scalar(select(func.count()).select_from(ActivityLog).where(ActivityLog.session_id == req)) == 1
+        assert db.scalar(select(func.count()).select_from(FocusSegment).where(FocusSegment.session_id == req)) == 2
+        with pytest.raises(ValueError):
+            focus.transition(db,camp['other'],req,'pause')
+
+
+def test_focus_single_active_and_invalid_input(camp):
+    from app.modules.activity import service as focus
+    with pytest.raises(ValueError):
+        with camp['sessions'].begin() as db:
+            focus.start(db,camp['user'],'countdown','0',None,uuid4())
+    with camp['sessions'].begin() as db:
+        focus.start(db,camp['user'],'elapsed','',None,uuid4())
+    with pytest.raises(ValueError):
+        with camp['sessions'].begin() as db:
+            focus.start(db,camp['user'],'elapsed','',None,uuid4())
+
+def test_focus_confirmed_duration_and_rollback(camp):
+    from app.modules.activity import service as focus
+    from app.modules.activity.models import ActivityLog
+    request_id = uuid4()
+    with camp['sessions'].begin() as db:
+        focus.start(db, camp['user'], 'elapsed', '', None, request_id)
+    with pytest.raises(ValueError):
+        with camp['sessions'].begin() as db:
+            focus.transition(db, camp['user'], request_id, 'finish', 999999)
+    with camp['sessions'].begin() as db:
+        assert focus.active(db, camp['user']).status == 'running'
+        focus.transition(db, camp['user'], request_id, 'finish', 0)
+    with camp['sessions'].begin() as db:
+        log = db.scalar(select(ActivityLog).where(ActivityLog.session_id == request_id))
+        assert log.duration_seconds == 0 and '原计时' in log.note
+
+
+def test_focus_concurrent_finish_is_idempotent(camp):
+    from app.modules.activity import service as focus
+    from app.modules.activity.models import ActivityLog
+    request_id = uuid4()
+    with camp['sessions'].begin() as db:
+        focus.start(db, camp['user'], 'elapsed', '', None, request_id)
+    def finish(_):
+        with camp['sessions'].begin() as db:
+            return focus.transition(db, camp['user'], request_id, 'finish').id
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert list(pool.map(finish, range(2))) == [request_id, request_id]
+    with camp['sessions'].begin() as db:
+        assert db.scalar(select(func.count()).select_from(ActivityLog).where(ActivityLog.session_id == request_id)) == 1
+
+
+def test_focus_http_flow(camp):
+    with browser_client(camp) as client:
+        headers = {'origin':'http://testserver'}
+        page = client.get('/focus')
+        assert page.status_code == 200 and '开始一次专注' in page.text
+        request_id = re.search(r'name="request_id" value="([^"]+)"',page.text).group(1)
+        response = client.post('/focus/start',data={'request_id':request_id,'mode':'countdown','minutes':'1'},headers=headers)
+        assert response.status_code == 200 and '专注中' in response.text
+        assert client.get('/focus').status_code == 200
+        response = client.post('/focus/pause',data={'session_id':request_id},headers=headers)
+        assert '已暂停' in response.text
+        response = client.post('/focus/resume',data={'session_id':request_id},headers=headers)
+        assert '专注中' in response.text
+        response = client.post('/focus/finish',data={'session_id':request_id,'confirmed_seconds':'0'},headers=headers)
+        assert '开始一次专注' in response.text
+        assert client.post('/focus/start').status_code == 403

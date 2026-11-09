@@ -9,6 +9,8 @@ from app.modules.identity import models as identity_models  # noqa: F401
 from app.modules.quests import models as quest_models  # noqa: F401
 from app.modules.tasks import models as task_models  # noqa: F401
 
+from app.modules.activity import models as activity_models  # noqa: F401
+
 config = context.config
 
 

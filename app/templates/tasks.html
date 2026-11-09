@@ -49,7 +49,7 @@
 <section class="card form-card"><h2>{{ '添加子任务' if parent else '新建副本' }}</h2><form method="post" action="/tasks/create" class="form-stack">{{ token() }}{{ fields(values, parent) }}<button class="button primary">创建任务</button></form></section>
 {% elif view == 'detail' %}
 <div class="task-toolbar"><a class="text-link" href="/tasks">← 返回任务列表</a>{% if task.main_quest_id %}<a class="text-link" href="/quests/{{ task.main_quest_id }}">查看主线</a>{% endif %}{% if parent %}<a class="text-link" href="/tasks/{{ parent.id }}">查看父任务</a>{% endif %}</div>
-<section class="card form-card"><h2>{{ task.title }}</h2><p>{{ '已删除 · ' if task.deleted_at else '' }}{{ statuses[task.status] }}{% if task.completed_at %} · {{ task.completed_at.astimezone(local_zone).strftime('%Y-%m-%d %H:%M') }}{% endif %}</p>
+<section class="card form-card"><h2>{{ task.title }}</h2>{% if not task.deleted_at and task.status != "completed" %}<a class="button secondary" href="/focus?task={{ task.id }}">开始专注</a>{% endif %}<p>{{ '已删除 · ' if task.deleted_at else '' }}{{ statuses[task.status] }}{% if task.completed_at %} · {{ task.completed_at.astimezone(local_zone).strftime('%Y-%m-%d %H:%M') }}{% endif %}</p>
 <p>{{ priorities[task.priority] }}优先级{% if task.category %} · {{ task.category }}{% endif %}{% if task.due_date %} · 截止 {{ task.due_date }}{% endif %} · {{ repeats[task.repeat_rule] }}</p>{% if task.description %}<p class="task-description">{{ task.description }}</p>{% endif %}
 {% if task.deleted_at %}<form method="post" action="/tasks/{{ task.id }}/restore">{{ token(task) }}<button class="button primary">恢复任务</button></form>
 {% else %}

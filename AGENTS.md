@@ -6,6 +6,8 @@
 
 2026-11-10 用户追加授权完成 1.4；1.5 及以后未授权。此前授权状态以此最新记录为准。
 
+用户此前授权连续开发 1.5 和 1.6，最新指令优先聚焦 1.5；后续可按用户要求继续已授权的 1.6。
+
 ## 开始工作前
 
 先读取本文件、README.md 以及 docs/ 下的 ROADMAP.md、ARCHITECTURE.md、DATA_MODEL.md、PROGRESS.md、DECISIONS.md、ACCEPTANCE.md。文档与实际代码冲突时先报告，不凭猜测修改。

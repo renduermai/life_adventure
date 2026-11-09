@@ -19,6 +19,7 @@ PAGES = {
     "settings": {"title": "营地设置", "subtitle": "让营地成为适合你的地方。", "symbol": "⚙"},
     "quests": {"title": "主线任务", "subtitle": "让目标一步步清晰。", "symbol": "✧"},
     "tasks": {"title": "副本任务", "subtitle": "把下一步变成可以行动的小事。", "symbol": "▧"},
+    "focus": {"title": "专注沙漏", "subtitle": "为当下留一段专注的时间。", "symbol": "⌛"},
     "account": {"title": "角色账号", "subtitle": "这里是你的冒险身份。", "symbol": "◉"},
 }
 
@@ -42,6 +43,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(quest_router)
     from app.modules.tasks.router import router as task_router
     app.include_router(task_router)
+    from app.modules.activity.router import router as focus_router
+    app.include_router(focus_router)
     app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")
     templates = Jinja2Templates(directory=ROOT / "app/templates")
 
