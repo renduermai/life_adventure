@@ -1,5 +1,10 @@
 # 数据模型草案
 
+## 阶段 1.6 更新
+
+0006_activity 在 activity_logs 增加版本与用户归属唯一约束，并新增 activity_events 审计表。原始计时会话、区间与修改后的手记记录分别保留。
+
+
 ## 阶段 1.5 更新
 
 0005_focus 新增 focus_sessions、focus_segments、activity_logs。每位用户最多一个活动会话，每会话至多一条行动记录。确认有效时长可小于系统计时，原始会话和区间保留，记录备注保留确认依据。

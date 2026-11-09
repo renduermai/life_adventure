@@ -1,7 +1,7 @@
 """Durable focus sessions and user-owned activity records."""
 from datetime import datetime
 from uuid import UUID, uuid4
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, UniqueConstraint, func, text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, JSON, UniqueConstraint, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -34,6 +34,7 @@ class ActivityLog(Base):
         ForeignKeyConstraint(['session_id','user_id'], ['focus_sessions.id','focus_sessions.user_id'], name='fk_activity_session_owner'),
         CheckConstraint('duration_seconds >= 0', name='ck_activity_duration'),
         UniqueConstraint('session_id', name='uq_activity_session'),
+        UniqueConstraint('id', 'user_id', name='uq_activity_id_user'),
     )
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), index=True)
@@ -44,6 +45,7 @@ class ActivityLog(Base):
     category: Mapped[str] = mapped_column(String(60), default='')
     note: Mapped[str] = mapped_column(Text, default='')
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default='1')
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -55,3 +57,14 @@ class FocusSegment(Base):
     session_id: Mapped[UUID] = mapped_column(index=True)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ActivityEvent(Base):
+    __tablename__ = 'activity_events'
+    __table_args__ = (ForeignKeyConstraint(['activity_id','user_id'], ['activity_logs.id','activity_logs.user_id'], name='fk_activity_event_owner'),)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), index=True)
+    activity_id: Mapped[UUID] = mapped_column(index=True)
+    action: Mapped[str] = mapped_column(String(16))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

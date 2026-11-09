@@ -439,3 +439,60 @@ def test_focus_http_flow(camp):
         response = client.post('/focus/finish',data={'session_id':request_id,'confirmed_seconds':'0'},headers=headers)
         assert '开始一次专注' in response.text
         assert client.post('/focus/start').status_code == 403
+
+def test_journal_crud_idempotency_and_isolation(camp):
+    from app.modules.activity import journal
+    from app.modules.activity.models import ActivityEvent
+    uid=camp['user']; rid=uuid4(); task=create(camp)
+    values={'occurred_at':'2026-11-10T23:30','duration_seconds':'7200','category':'学习','note':'测试','task_id':str(task)}
+    with camp['sessions'].begin() as db:
+        item=journal.create(db,uid,rid,values)
+        assert journal.create(db,uid,rid,values).id==rid
+    with pytest.raises(ValueError):
+        with camp['sessions'].begin() as db:
+            journal.create(db,uid,rid,{**values,'note':'不同'})
+    with camp['sessions'].begin() as db:
+        start,end,*_=journal.period('day','2026-11-10','Asia/Shanghai')
+        assert sum(x.duration_seconds for x in journal.list_logs(db,uid,start,end))==7200
+        start,end,*_=journal.period('day','2026-11-11','Asia/Shanghai')
+        assert journal.list_logs(db,uid,start,end)==[]
+        assert journal.list_logs(db,camp['other'],*journal.period('month','2026-11-10','Asia/Shanghai')[:2])==[]
+    with camp['sessions'].begin() as db:
+        journal.change(db,uid,rid,1,'edit',{**values,'duration_seconds':'60'})
+    with pytest.raises(ValueError):
+        with camp['sessions'].begin() as db: journal.change(db,uid,rid,1,'delete',{})
+    with pytest.raises(ValueError):
+        with camp['sessions'].begin() as db: journal.change(db,camp['other'],rid,2,'delete',{})
+    with camp['sessions'].begin() as db:
+        journal.change(db,uid,rid,2,'delete',{})
+        start,end,*_=journal.period('month','2026-11-10','Asia/Shanghai')
+        assert journal.list_logs(db,uid,start,end)==[]
+        assert len(journal.list_logs(db,uid,start,end,deleted=True))==1
+    with camp['sessions'].begin() as db:
+        journal.change(db,uid,rid,3,'restore',{})
+    with camp['sessions'].begin() as db:
+        assert journal.get_log(db,uid,rid).duration_seconds==60
+        assert db.scalar(select(func.count()).select_from(ActivityEvent).where(ActivityEvent.activity_id==rid))==4
+
+
+def test_journal_timer_http_and_validation(camp):
+    from app.modules.activity import service as focus, journal
+    from app.modules.activity.models import ActivityLog
+    req=uuid4()
+    with camp['sessions'].begin() as db: focus.start(db,camp['user'],'elapsed','',None,req)
+    with camp['sessions'].begin() as db: focus.transition(db,camp['user'],req,'finish')
+    with camp['sessions'].begin() as db:
+        log=db.scalar(select(ActivityLog).where(ActivityLog.session_id==req))
+        log_id=log.id
+        with pytest.raises(ValueError): journal.fields({'occurred_at':'bad','duration_seconds':'0'},'Asia/Shanghai')
+    with browser_client(camp) as client:
+        headers={'origin':'http://testserver'}
+        assert client.get('/journal').status_code==200
+        assert client.get('/journal?period=invalid').status_code==400
+        page=client.get('/journal?period=day')
+        assert '专注计时' in page.text
+        assert client.get(f'/journal/{log_id}').status_code==200
+        assert client.post(f'/journal/{log_id}/delete',data={'version':'1'},headers=headers).status_code==200
+        assert client.get('/journal?period=day&deleted=true').status_code==200
+        assert client.post(f'/journal/{log_id}/restore',data={'version':'2'},headers=headers).status_code==200
+        assert client.post('/journal/create').status_code==403

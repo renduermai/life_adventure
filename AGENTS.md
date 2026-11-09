@@ -8,6 +8,8 @@
 
 用户此前授权连续开发 1.5 和 1.6，最新指令优先聚焦 1.5；后续可按用户要求继续已授权的 1.6。
 
+用户已授权并请求完成 1.6；1.7 尚未授权。
+
 ## 开始工作前
 
 先读取本文件、README.md 以及 docs/ 下的 ROADMAP.md、ARCHITECTURE.md、DATA_MODEL.md、PROGRESS.md、DECISIONS.md、ACCEPTANCE.md。文档与实际代码冲突时先报告，不凭猜测修改。
