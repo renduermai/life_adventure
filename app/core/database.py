@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import Settings, postgres_url
 
-EXPECTED_REVISION = "0003_quest_events"
+EXPECTED_REVISION = "0004_tasks"
 logger = logging.getLogger("adventure_camp")
 
 

@@ -1,6 +1,7 @@
 """Identity operations. Session values stored in the database are hashes."""
 import hashlib
 import secrets
+from uuid import UUID
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -11,6 +12,14 @@ from sqlalchemy.orm import Session
 from app.modules.identity.models import LoginSession, User
 
 passwords = PasswordHash.recommended()
+
+
+def lock_user(db: Session, user_id: UUID) -> User:
+    """Serialize related task/quest writes, including association deletion."""
+    user = db.scalar(select(User).where(User.id == user_id).with_for_update())
+    if user is None:
+        raise ValueError("账号不存在")
+    return user
 
 
 def token_hash(token: str) -> str:

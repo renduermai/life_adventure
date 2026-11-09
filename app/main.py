@@ -1,4 +1,4 @@
-"""Stage 0 web entry point. Domain features are intentionally not implemented."""
+"""Adventure Camp application entry point."""
 import logging
 from contextlib import asynccontextmanager
 from uuid import uuid4
@@ -18,6 +18,7 @@ PAGES = {
     "journey": {"title": "冒险地图", "subtitle": "看清方向，再迈出下一步。", "symbol": "◇"},
     "settings": {"title": "营地设置", "subtitle": "让营地成为适合你的地方。", "symbol": "⚙"},
     "quests": {"title": "主线任务", "subtitle": "让目标一步步清晰。", "symbol": "✧"},
+    "tasks": {"title": "副本任务", "subtitle": "把下一步变成可以行动的小事。", "symbol": "▧"},
     "account": {"title": "角色账号", "subtitle": "这里是你的冒险身份。", "symbol": "◉"},
 }
 
@@ -39,6 +40,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     from app.modules.quests.router import router as quest_router
     app.include_router(quest_router)
+    from app.modules.tasks.router import router as task_router
+    app.include_router(task_router)
     app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")
     templates = Jinja2Templates(directory=ROOT / "app/templates")
 

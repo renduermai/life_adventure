@@ -29,6 +29,7 @@ class MainQuest(Base):
 class Milestone(Base):
     __tablename__ = "milestones"
     __table_args__ = (
+        UniqueConstraint("id", "main_quest_id", "user_id", name="uq_milestone_id_quest_user"),
         ForeignKeyConstraint(["main_quest_id", "user_id"], ["main_quests.id", "main_quests.user_id"], name="fk_milestone_quest_owner"),
         CheckConstraint("status IN ('pending','completed')", name="ck_milestone_status"),
     )

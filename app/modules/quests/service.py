@@ -56,7 +56,15 @@ def soft_delete(record: MainQuest | Milestone) -> None:
 
 
 def progress(milestones: list[Milestone]) -> int | None:
-    """Equal milestone weighting until task-based progress is specified."""
+    """Fallback progress when no live task leaves are associated."""
     if not milestones:
         return None
     return round(sum(m.status == "completed" for m in milestones) * 100 / len(milestones))
+
+
+def quest_progress(db: Session, user_id: UUID, quest_id: UUID, milestones: list[Milestone]) -> dict:
+    from app.modules.tasks.service import progress_counts
+    completed, total = progress_counts(db, user_id, quest_id)
+    if total:
+        return {"progress": round(completed * 100 / total), "progress_label": f"已完成末级任务 {completed} / {total}"}
+    return {"progress": progress([m for m in milestones if m.deleted_at is None]), "progress_label": "已完成里程碑 / 未删除里程碑"}

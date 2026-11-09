@@ -134,7 +134,9 @@ def test_offline_migration_generates_postgres_sql():
     sql = config.output_buffer.getvalue()
     assert "CREATE TABLE alembic_version" in sql
     assert EXPECTED_REVISION in sql
-    assert "CREATE TABLE tasks" not in sql
+    assert "CREATE TABLE tasks" in sql
+    assert "uq_task_completion_event" in sql
+    assert "CREATE TABLE task_commands" in sql
     reverse = Config(str(ROOT / "alembic.ini"), output_buffer=io.StringIO())
     command.downgrade(reverse, f"{EXPECTED_REVISION}:base", sql=True)
     assert "DELETE FROM alembic_version" in reverse.output_buffer.getvalue()

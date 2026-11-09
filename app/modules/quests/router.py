@@ -9,9 +9,9 @@ from sqlalchemy import delete, select
 
 from app.core.config import ROOT
 from app.modules.identity.models import LoginSession
-from app.modules.identity.service import current_user, login, register, token_hash, update_profile
+from app.modules.identity.service import current_user, lock_user, login, register, token_hash, update_profile
 from app.modules.quests.models import MainQuest, Milestone, QuestEvent
-from app.modules.quests.service import get_milestone, get_quest, progress, set_milestone_fields, set_quest_fields, soft_delete
+from app.modules.quests.service import get_milestone, get_quest, quest_progress, set_milestone_fields, set_quest_fields, soft_delete
 
 router = APIRouter()
 templates = Jinja2Templates(directory=ROOT / "app/templates")
@@ -120,9 +120,9 @@ def quest_detail(request: Request, quest_id: UUID):
         if not quest:
             raise HTTPException(404, "主线不存在")
         milestones = db.scalars(select(Milestone).where(Milestone.user_id == user.id, Milestone.main_quest_id == quest_id).order_by(Milestone.sort_order, Milestone.created_at)).all()
-        value = progress([item for item in milestones if item.deleted_at is None])
+        value = quest_progress(db, user.id, quest_id, milestones)
         events = db.scalars(select(QuestEvent).where(QuestEvent.user_id == user.id, QuestEvent.main_quest_id == quest_id).order_by(QuestEvent.created_at.desc())).all()
-        return render(request, "detail", user=user, quest=quest, milestones=milestones, progress=value, events=events)
+        return render(request, "detail", user=user, quest=quest, milestones=milestones, **value, events=events)
 
 
 @router.post("/quests/{quest_id}/{action}")
@@ -133,6 +133,7 @@ async def quest_action(request: Request, quest_id: UUID, action: str):
         user = current_user(db, request.cookies.get("camp_session"))
         if not user:
             return back("/account")
+        lock_user(db, user.id)
         quest = get_quest(db, user.id, quest_id, deleted=action == "restore")
         if not quest:
             raise HTTPException(404, "主线不存在")
@@ -159,7 +160,7 @@ async def quest_action(request: Request, quest_id: UUID, action: str):
             record_event(db, quest, labels[action], details.get(action, ""))
         except ValueError as error:
             milestones = db.scalars(select(Milestone).where(Milestone.user_id == user.id, Milestone.main_quest_id == quest_id)).all()
-            return render(request, "detail", user=user, quest=quest, milestones=milestones, progress=progress([m for m in milestones if m.deleted_at is None]), error=str(error))
+            return render(request, "detail", user=user, quest=quest, milestones=milestones, **quest_progress(db, user.id, quest_id, milestones), error=str(error))
         return back("/quests" if action == "delete" else f"/quests/{quest.id}")
 
 
@@ -171,6 +172,7 @@ async def milestone_action(request: Request, quest_id: UUID, milestone_id: UUID,
         user = current_user(db, request.cookies.get("camp_session"))
         if not user:
             return back("/account")
+        lock_user(db, user.id)
         if not get_quest(db, user.id, quest_id):
             raise HTTPException(404)
         item = get_milestone(db, user.id, quest_id, milestone_id, deleted=action == "restore")
@@ -195,5 +197,5 @@ async def milestone_action(request: Request, quest_id: UUID, milestone_id: UUID,
         except ValueError as error:
             milestones = db.scalars(select(Milestone).where(Milestone.user_id == user.id, Milestone.main_quest_id == quest_id)).all()
             quest = get_quest(db, user.id, quest_id)
-            return render(request, "detail", user=user, quest=quest, milestones=milestones, progress=progress([m for m in milestones if m.deleted_at is None]), error=str(error))
+            return render(request, "detail", user=user, quest=quest, milestones=milestones, **quest_progress(db, user.id, quest_id, milestones), error=str(error))
         return back(f"/quests/{quest_id}")
