@@ -1,5 +1,9 @@
 # 数据模型草案
 
+## V2 第 5 步（2026-11-15）
+
+0010_recommendations 新增 task_analysis_cache（真实主线/副本归属外键、内容指纹、模型版本、特征及人工覆盖）和 recommendation_batches（用户/快照关联、请求防重、发布状态、结果 JSON）。结果中的任务引用经后端真实候选验证，GET 时再次核对归属、可用性及指纹；不是新任务事实表。
+
 ## V2 第 4 步
 
 0009_startup_state 新增 startup_state_snapshots 和 startup_current；数值约束 0–100，当前引用按用户归属复合外键约束。

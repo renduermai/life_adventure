@@ -8,6 +8,7 @@
 <div class="axis-label">心理压力 →　（左低 · 右高）　 |　当前能量 ↑　（下低 · 上高）</div>
 <form id="state-form" class="form-stack"><div class="state-sliders"><label>心理压力 <output id="pressure-output">50</output><input type="range" id="pressure" min="0" max="100" value="50" step="1"></label><label>当前能量 <output id="energy-output">50</output><input type="range" id="energy" min="0" max="100" value="50" step="1"></label></div>
 <label>当前困难（可选）<textarea id="difficulty" maxlength="2000" placeholder="此刻有什么让你难以开始？"></textarea></label><p id="state-summary" aria-live="polite"></p><p id="state-message" role="status" aria-live="polite"></p><button class="button primary" type="submit">确认并保存状态</button></form>
+<section><h2>象限任务关键词</h2><p>主动刷新将把有效任务的必要内容发送到灵石区配置的模型，可能产生费用。</p><button id="recommend-refresh" type="button" class="button secondary">分析并刷新任务</button><p id="recommend-message" role="status"></p><div id="recommend-list"></div></section><script src="{{ url_for('static', path='js/recommendations.js') }}" defer></script>
 <p class="muted">这是一种行动辅助工具，不用于医学或心理疾病诊断。</p></section>
 <aside class="card state-chat"><h2>AI 对话</h2><p>这里将用于一起理解当前状态。对话功能将在后续步骤接入。</p><p class="muted">现在可以先用滑杆记录自己的感受。</p></aside></div>
 {% endblock %}

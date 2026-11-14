@@ -60,6 +60,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(ai_router)
     from app.modules.startup_state.router import router as startup_router
     app.include_router(startup_router)
+    from app.modules.task_recommendation.router import router as recommendation_router
+    app.include_router(recommendation_router)
     app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")
     templates = Jinja2Templates(directory=ROOT / "app/templates")
 

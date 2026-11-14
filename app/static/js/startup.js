@@ -27,9 +27,10 @@
     try {
       const response=await fetch('/api/startup/states',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); const result=await response.json();
       if (!response.ok) { if (response.status===409) pending=null; throw new Error(result.error || '保存失败'); }
-      generation=result.generation; pending=null; summary.textContent=`已保存：${result.quadrant} · 压力 ${result.pressure} · 能量 ${result.energy}`; message.textContent='状态已保存。';
+      generation=result.generation; pending=null; summary.textContent=`已保存：${result.quadrant} · 压力 ${result.pressure} · 能量 ${result.energy}`; message.textContent='状态已保存。';window.dispatchEvent(new Event('state-saved'));
     } catch(error) { message.textContent=error.message; }
     finally { button.disabled=false; }
   });
+  window.addEventListener('recommendations-refreshed',async()=>{try{const response=await fetch('/api/startup/current');if(response.ok)generation=(await response.json()).generation;}catch{}});
   load();
 })();

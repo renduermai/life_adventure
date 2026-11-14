@@ -98,6 +98,7 @@ async def quest_create(request: Request):
         user = current_user(db, request.cookies.get("camp_session"))
         if not user:
             return back("/account")
+        lock_user(db, user.id)
         quest = MainQuest(user_id=user.id, status="active")
         try:
             set_quest_fields(quest, str(form.get("title", "")), str(form.get("description", "")), str(form.get("start_date", "")), str(form.get("due_date", "")))
