@@ -1,5 +1,9 @@
 # 验收与测试记录
 
+## V2 第 3 步检查
+
+默认 pytest 71 passed、33 skipped、1 warning。TestClient 验证 /spirit-stones 页面和脚本资源为 200，node --check 通过。计算机使用工具初始化时提示系统找不到路径；浏览器交互、真实页面保存和重新打开、移动布局未验证。此前第 2 步的后端测试不能代替本次网页验收。
+
 ## 2026-11-15 V2 第 2 步验证结果
 
 默认 pytest：71 passed、33 skipped、1 warning（既有 Starlette/httpx 弃用提示），跳过项不是通过。pip check 无依赖冲突；离线 Alembic SQL 测试通过。0008 在线迁移与 metadata check 通过。

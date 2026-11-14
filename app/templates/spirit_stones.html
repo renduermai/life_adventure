@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="{{ url_for('static', path='js/spirit_stones.js') }}" defer></script>
+<section class="intro-panel"><h2>灵石区 · AI 能力中心</h2><p class="muted">管理你的模型入口。连接测试会发送一条简短测试消息，可能产生费用。</p><button id="ai-new" class="button primary" type="button">＋ 添加 API 入口</button></section>
+<p id="ai-message" class="notice" role="status" aria-live="polite" hidden></p>
+<div class="section-heading"><h2>我的模型</h2></div><div id="ai-list" class="ai-grid"><p class="muted">正在加载……</p></div>
+<section id="ai-editor" class="card form-card" hidden><h2 id="ai-editor-title">添加 API 入口</h2><form id="ai-form" class="form-stack">
+<label>自定义名称<input name="name" maxlength="80" required></label>
+<label>Base URL<input name="base_url" type="url" maxlength="500" placeholder="https://…/v1" required></label>
+<label>模型 ID<input name="model_id" maxlength="160" required></label>
+<label>接口协议<select name="protocol"><option value="openai_compatible">OpenAI-compatible</option></select></label>
+<label>API Key<input name="api_key" type="password" maxlength="4096" autocomplete="new-password"><small>编辑时留空可保留已有密钥；更换地址后请确认信任该服务商。</small></label>
+<label>到期日期<input name="expires_on" type="date"><small>由你自行填写，非供应商自动查询结果。</small></label>
+<label>备注<textarea name="notes" maxlength="2000"></textarea></label>
+<label><input name="enabled" type="checkbox" checked> 启用此入口</label>
+<div class="form-row"><button class="button primary" type="submit">保存配置</button><button id="ai-cancel" class="button secondary" type="button">取消</button></div></form></section>
+{% endblock %}

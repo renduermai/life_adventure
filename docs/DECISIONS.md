@@ -1,5 +1,9 @@
 # 架构决策记录
 
+## V2 第 3 步
+
+灵石区沿用现有 Jinja 模板、CSS 和本地 JavaScript；修改 Base URL、删除和连接测试时明确提示。到期日由用户填写。浏览器实际交互尚待验证。
+
 ## 2026-11-15 V2 第 2 步实施决策
 
 已固定 cryptography==50.0.2；采用 Fernet/MultiFernet，环境变量 AI_ENCRYPTION_KEYS 为新钥在前的列表。统一适配器采用 schema 提示与 Pydantic 校验，不强制供应商原生 JSON 参数，不自动修复重试。DNS 等待 10 秒、最多 4 个解析线程；网络套接字 10 秒、总截止 60 秒；正文响应 1 MiB，max_tokens 512，多轮至多 30 条/24000 字符。

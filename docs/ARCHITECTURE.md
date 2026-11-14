@@ -1,5 +1,9 @@
 # 总体架构
 
+## V2 第 3 步页面
+
+灵石区使用服务端模板及同源静态 JavaScript，通过既有 /api/ai 接口管理配置，动态文字使用 textContent；API Key 仅经 HTTPS/本机请求提交，编辑框不回填，未使用浏览器存储。本步未新增业务表。浏览器验收待完成。
+
 ## 2026-11-15 V2 第 2 步实现
 
 ai_gateway 已实现 models/schemas/security/adapter/service/router/manage；FastAPI 挂载 /api/ai JSON 接口，继续使用数据库会话及同源写入校验。OpenAICompatibleAdapter 隔离协议，AIService 选择本用户配置并用短事务记录调用，模型请求不持有数据库连接。公网地址验证绑定实际 TLS 连接，禁代理/重定向/自动重试。密钥仅在服务端 Fernet 加密解密，默认模型和调用防重以用户锁和数据库唯一约束协调。
