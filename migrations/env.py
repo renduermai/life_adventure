@@ -18,6 +18,7 @@ from app.modules.ai_gateway import models as ai_models  # noqa: F401
 from app.modules.startup_state import models as startup_models  # noqa: F401
 
 from app.modules.task_recommendation import models as recommendation_models  # noqa: F401
+from app.modules.startup_chat import models as chat_models  # noqa: F401
 
 config = context.config
 

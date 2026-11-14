@@ -1,5 +1,16 @@
 # 验收与测试记录
 
+## V2 第 7 步（2026-11-15）
+
+最终本地服务已重启，/startup、聊天脚本与 /health/ready 均返回 200。
+
+- 默认 pytest：99 passed、38 skipped、1 warning（既有 Starlette/httpx 弃用）；跳过不是通过。
+- 单独显式设置 TEST_DATABASE_URL，以同一 Supabase 项目隔离 schema 执行 tests/test_startup_chat_postgres.py：5 passed、1 warning、125.22秒。覆盖追问上下文、无自动确认、修改后确认/来源、共享批次、历史、请求重放、越权、旧轮次/状态冲突、失败/无效输出、并发发送、分页；fixture 包含迁移往返与 ORM check 并清理 schema。
+- 开发库 0011_startup_chat 在线 upgrade / metadata check 通过。
+- 无头 Edge + 真实 PostgreSQL + 真实百炼，临时账号：发送合成描述、收到真实建议、未确认前无状态行、鼠标拖动压力滑杆、确认保存、刷新并读取相同批次、四个主线/副本页面绿色及 batch_id 一致、重载读回状态/对话，通过。任务特征使用合成缓存夹具，不能称本次重新验收任务分析模型。模型本次一次调用成功，usage 输入532/输出113/总645。临时用户/配置/会话/快照/任务/日志全部清理。
+- tests/browser_startup_chat.py：无头 Edge + 合成 HTTP（不是数据库验证），覆盖信息不足追问、修改建议、未确认禁止刷新、失败提示并保留旧批次、历史重开、分页按钮隐藏、390px无溢出、浅/深主题。桌面及窄屏截图人工查看；修复 .button 样式覆盖 hidden 的问题。
+- JS 语法检查、pip check 通过。没有手机真机/跨设备测试，未替代第 9 步完整旧业务回归与导出验收。
+
 ## V2 第 6 步（2026-11-15）
 
 第 6 步：默认测试 88 passed、33 skipped、1 warning；三份 JS 语法检查与 diff --check 通过。另使用真实 Supabase 临时账号和合成批次验证四页面入口、统一 batch_id/绿色红色数据、主线和副本准确上下文、未知/删除目标 404，临时数据清理；这些是 HTTP/数据验证，不是浏览器颜色呈现验证。模板测试检查类型/ID/聊天锚点，权限服务单元测试覆盖不可访问目标。浏览器实际点击、跨标签页同步及手机真机尚未验证。本步没有供应商调用。

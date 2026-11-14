@@ -1,5 +1,11 @@
 # 数据模型草案
 
+## V2 第 7 步（2026-11-15）
+
+0011_startup_chat 新增 startup_conversations（用户、标题、版本）与 startup_chat_turns（用户、会话、顺序、请求号、指纹、输入、结构化回复、pending/succeeded/failed、错误码、基础状态代次、时间）。同用户请求唯一、会话顺序唯一、复合外键约束归属。startup_state_snapshots 增加可空 source_turn_id，复合外键关联同用户轮次；旧手动状态保留空来源。用户确认可以修改建议数值，快照是最终确认值，回复保留原建议。
+
+迁移已在开发库应用，ORM check 通过。对话与状态历史保存在 PostgreSQL，未写浏览器存储；历史分页每页20项。当前旧版数据导出尚不包含 V2 对话/状态，范围在第 9 步统一验收。
+
 ## V2 第 6 步（2026-11-15）
 
 第 6 步复用 task_analysis_cache 和 recommendation_batches，不新增表或修改迁移。拆解目标只读原任务、里程碑、子任务及当前状态；不新建拆解会话或正式任务。

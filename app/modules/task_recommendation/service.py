@@ -72,10 +72,11 @@ def current_view(db,uid):
   items.append({**stored,'stale':stale,'level':None if stale else stored['level'],'href':('/quests/' if target['kind']=='quest' else '/tasks/')+str(target['id'])})
  return {'batch_id':str(batch.id),'snapshot_id':str(batch.snapshot_id),'items':items,'message':'任务有变化时请重新分析；颜色仅表示当前适配，不限制执行。'}
 
-def refresh(database,settings,uid,request_id):
+def refresh(database,settings,uid,request_id,expected_snapshot_id=None):
  with database.transaction() as db:
   lock_user(db,uid); current=db.get(StateCurrent,uid)
   if not current: raise AIError('state_required','请先确认并保存状态',409)
+  if expected_snapshot_id is not None and current.snapshot_id!=expected_snapshot_id: raise AIError('state_changed','状态已变化，请读取最新状态后再刷新',409)
   previous=db.scalar(select(RecommendationBatch).where(RecommendationBatch.user_id==uid,RecommendationBatch.request_id==request_id))
   if previous: raise AIError('request_used','此刷新请求已处理，请查看结果或用新编号重试',409)
   live,structure=candidates(db,uid)

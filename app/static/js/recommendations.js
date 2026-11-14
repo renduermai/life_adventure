@@ -2,7 +2,7 @@
  const list=document.querySelector('#recommend-list'), message=document.querySelector('#recommend-message'), button=document.querySelector('#recommend-refresh');
  async function api(url,method='GET',data) { const r=await fetch(url,{method,headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined}); const value=await r.json();if(!r.ok)throw Error(value.error||'请求失败，请稍后重试');return value; }
  function render(data) {
-  list.replaceChildren();message.textContent=data.message;
+  list.replaceChildren();message.textContent=data.message;window.dispatchEvent(new CustomEvent('recommendations-view',{detail:data}));
   document.querySelectorAll('.quadrant .recommend-tags').forEach(x=>x.remove());
   ['投入区','降噪区','激活区','修复区'].forEach((q,index)=>{const tags=document.createElement('div');tags.className='recommend-tags';for(const item of data.items.filter(x=>!x.stale&&x.quadrants.includes(q))){const a=document.createElement('a');a.href=item.href;a.textContent=item.keyword;a.title=item.reason;tags.append(a);}document.querySelectorAll('.quadrant')[index].append(tags);});
   for(const quadrant of ['投入区','降噪区','激活区','修复区','待确认']) {
@@ -17,9 +17,17 @@
    }list.append(section);
   }
  }
- let readVersion=0;
- async function load(){if(button.disabled)return;const version=++readVersion;try{const data=await api('/api/startup/recommendations');if(version===readVersion)render(data);}catch(e){if(version===readVersion){list.replaceChildren();document.querySelectorAll('.quadrant .recommend-tags').forEach(x=>x.remove());message.textContent='推荐暂不可用，请稍后刷新';}}}
- button.addEventListener('click',async()=>{++readVersion;button.disabled=true;message.textContent='正在分析，请稍候……';try{render(await api('/api/startup/refresh','POST',{request_id:crypto.randomUUID()}));window.dispatchEvent(new Event('recommendations-refreshed')); }catch(e){message.textContent=e.message+'；已保留上次结果';}finally{button.disabled=false;window.dispatchEvent(new Event('recommendations-refreshed'));}});
+ let readVersion=0,refreshing=false;
+ function availability(){button.disabled=refreshing||!window.startupState?.confirmed;}
+ window.addEventListener('state-readiness',availability);availability();
+ async function load(){if(refreshing)return;const version=++readVersion;try{const data=await api('/api/startup/recommendations');if(version===readVersion)render(data);}catch(e){if(version===readVersion){list.replaceChildren();document.querySelectorAll('.quadrant .recommend-tags').forEach(x=>x.remove());message.textContent='推荐暂不可用，请稍后刷新';window.dispatchEvent(new CustomEvent('recommendations-view',{detail:{items:[],message:'推荐暂不可用，请稍后刷新'}}));}}}
+ button.addEventListener('click',async()=>{
+  if(refreshing||!window.startupState?.confirmed)return;
+  let failure='';++readVersion;refreshing=true;availability();message.textContent='正在刷新，请稍候……';
+  try{render(await api('/api/startup/refresh','POST',{request_id:crypto.randomUUID(),expected_snapshot_id:window.startupState.snapshotId}));}
+  catch(e){failure=e.message+'；请检查状态后重试';}
+  finally{refreshing=false;availability();window.dispatchEvent(new Event('recommendations-refreshed'));await load();if(failure)message.textContent=failure;}
+ });
  window.addEventListener('state-saved',load);
  window.addEventListener('focus',load);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});

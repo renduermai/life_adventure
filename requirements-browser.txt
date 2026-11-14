@@ -1,0 +1,4 @@
+# Optional headless UI verification; uses an installed Microsoft Edge.
+-r requirements-dev.txt
+playwright==1.65.2
+greenlet==3.5.6
