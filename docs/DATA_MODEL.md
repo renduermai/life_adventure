@@ -1,5 +1,26 @@
 # 数据模型草案
 
+## 2026-11-15 当前模型与 V2 迁移计划
+
+已实施模型为 users、login_sessions、main_quests、milestones、quest_events、tasks、task_events、task_commands、focus_sessions、focus_segments、activity_logs、activity_events、reward_settings、reward_entries。代码期望迁移为 `0007_rewards`；本步只读核对源码和历史记录，未连接数据库或执行迁移。
+
+V2 第 1 步仅完成设计。下表均为后续拟新增模型，字段、复合外键、约束、请求幂等和导出规则详见 [V2_STARTUP_DESIGN.md](V2_STARTUP_DESIGN.md)。
+
+| 首次步骤 | 逻辑表 | 主要约束 |
+|---|---|---|
+| V2-2 | ai_configs、ai_module_bindings、ai_call_logs | 加密密钥、用户归属、唯一默认、用途/请求号幂等、日志无凭据 |
+| V2-4 | startup_state_snapshots、startup_current | 压力/能量 0–100、确认来源、同用户当前状态 |
+| V2-5 | task_analysis_cache、recommendation_batches、recommendation_items | 原目标归属外键、内容/规则版本、每批每目标唯一、完整发布 |
+| V2-5 | 扩展 startup_current | 当前批次与状态匹配、代次防旧请求覆盖 |
+| V2-7 | startup_conversations、startup_messages | 同用户会话、消息去重、目标/状态上下文 |
+| V2-8 | breakdown_plans | 草稿版本、步骤稳定 ID、确认防重、真实对象映射 |
+
+主线/副本目标引用使用 quest_id/task_id 二选一并校验所有权，不另建任务事实表，不在 tasks 或 main_quests 增加永久颜色。主线没有整数版本，需将自身、里程碑和关联任务组成内容指纹；副本 version 结合关联变化使用。缺失的时长/依赖保持未知，AI 估计单独标明来源。
+
+当前无上述 V2 表；迁移按各步骤单独创建和执行，须同步 ORM 注册和应用期望版本。第 6 步复用第 5 步批次基础，不重复建表。第 9 步明确私密数据导出选项及字段白名单，永不导出 API Key 明文/密文或主密钥；不承诺 ZIP 自动导入。
+
+以下是阶段交付及原始概念设计历史，旧 profiles/time_sessions/xp_events/coin_transactions 名称不等于当前真实表。实际表以上述列表和源码为准。
+
 ## 阶段 1.9 更新
 
 1.9 不新增表。导出包含已有业务表及用户基础资料，不包含凭据和会话。
