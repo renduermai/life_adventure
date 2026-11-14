@@ -1,0 +1,69 @@
+import hashlib, json
+from uuid import UUID
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, ValidationError
+from sqlalchemy import select
+from starlette.concurrency import run_in_threadpool
+from app.modules.identity.service import current_user, lock_user
+from app.modules.quests.router import same_origin
+from app.modules.startup_state.models import StateSnapshot, StateCurrent
+
+router = APIRouter(prefix="/api/startup")
+class StateInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    pressure: StrictInt = Field(ge=0, le=100)
+    energy: StrictInt = Field(ge=0, le=100)
+    difficulty: str = Field(default="", max_length=2000)
+    confirmed: StrictBool
+    request_id: UUID
+    expected_generation: StrictInt = Field(ge=0)
+
+def locate(p, e):
+    return ("投入区" if p < 50 else "降噪区") if e >= 50 else ("激活区" if p < 50 else "修复区")
+
+def owner(db, request):
+    user = current_user(db, request.cookies.get("camp_session"))
+    return user.id if user else None
+
+def result(snapshot, generation):
+    return {"pressure":snapshot.pressure, "energy":snapshot.energy, "difficulty":snapshot.difficulty, "quadrant":locate(snapshot.pressure,snapshot.energy), "generation":generation, "created_at":snapshot.created_at.isoformat()}
+
+@router.get("/current")
+def read(request: Request):
+    if request.app.state.database.sessions is None: return JSONResponse({"error":"数据库尚未配置"},503)
+    with request.app.state.database.transaction() as db:
+        user_id=owner(db,request)
+        if not user_id: return JSONResponse({"error":"请先登录"},401)
+        current=db.get(StateCurrent,user_id)
+        return result(db.get(StateSnapshot,current.snapshot_id),current.generation) if current else {"generation":0, "state":None}
+
+@router.post("/states")
+async def save(request: Request):
+    same_origin(request)
+    try:
+        data=StateInput.model_validate_json(await request.body())
+        if not data.confirmed: raise ValueError()
+    except (ValidationError,ValueError): return JSONResponse({"error":"请确认有效的压力和能量数值"},422)
+    def execute():
+        with request.app.state.database.transaction() as db:
+            user_id=owner(db,request)
+            if not user_id: return JSONResponse({"error":"请先登录"},401)
+            lock_user(db,user_id)
+            fingerprint=hashlib.sha256(json.dumps([data.pressure,data.energy,data.difficulty,data.expected_generation],ensure_ascii=False).encode()).hexdigest()
+            old=db.scalar(select(StateSnapshot).where(StateSnapshot.user_id==user_id,StateSnapshot.request_id==data.request_id))
+            current=db.get(StateCurrent,user_id)
+            if old:
+                if old.fingerprint!=fingerprint: return JSONResponse({"error":"提交编号已使用"},409)
+                if not current or current.snapshot_id != old.id: return JSONResponse({"error":"状态已更新，请刷新后重试"},409)
+                return result(old,current.generation if current else 0)
+            generation=current.generation if current else 0
+            if generation!=data.expected_generation: return JSONResponse({"error":"状态已在其他页面更新，请刷新后重试"},409)
+            snapshot=StateSnapshot(user_id=user_id,request_id=data.request_id,fingerprint=fingerprint,pressure=data.pressure,energy=data.energy,difficulty=data.difficulty.strip())
+            db.add(snapshot); db.flush()
+            if current: current.snapshot_id=snapshot.id; current.generation+=1
+            else: current=StateCurrent(user_id=user_id,snapshot_id=snapshot.id,generation=1); db.add(current)
+            db.flush()
+            return result(snapshot,current.generation)
+    if request.app.state.database.sessions is None: return JSONResponse({"error":"数据库尚未配置"},503)
+    return await run_in_threadpool(execute)

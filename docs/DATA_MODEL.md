@@ -1,5 +1,9 @@
 # 数据模型草案
 
+## V2 第 4 步
+
+0009_startup_state 新增 startup_state_snapshots 和 startup_current；数值约束 0–100，当前引用按用户归属复合外键约束。
+
 ## V2 第 3 步
 
 页面复用现有 0008_ai_gateway 配置与调用日志，无数据库结构变更。

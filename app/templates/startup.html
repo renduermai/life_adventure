@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="{{ url_for('static', path='js/startup.js') }}" defer></script>
+<div class="startup-layout"><section class="card state-panel"><div class="state-intro"><p class="eyebrow">STARTING STATE</p><h2>启动状态坐标轴</h2><p>先定位此刻，再决定下一步。没有错误的状态。</p></div>
+<div class="state-chart" aria-label="横轴心理压力从左到右增加，纵轴能量从下到上增加">
+<div class="quadrant q-focus"><strong>投入区</strong><small>直接行动</small></div><div class="quadrant q-clarity"><strong>降噪区</strong><small>先理清重点</small></div><div class="quadrant q-activate"><strong>激活区</strong><small>从轻松的事开始</small></div><div class="quadrant q-recover"><strong>修复区</strong><small>允许休息与减负</small></div>
+<svg class="state-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="50" y1="0" x2="50" y2="100"/><line x1="0" y1="50" x2="100" y2="50"/><circle id="state-dot" cx="50" cy="50" r="2.4"/></svg></div>
+<div class="axis-label">心理压力 →　（左低 · 右高）　 |　当前能量 ↑　（下低 · 上高）</div>
+<form id="state-form" class="form-stack"><div class="state-sliders"><label>心理压力 <output id="pressure-output">50</output><input type="range" id="pressure" min="0" max="100" value="50" step="1"></label><label>当前能量 <output id="energy-output">50</output><input type="range" id="energy" min="0" max="100" value="50" step="1"></label></div>
+<label>当前困难（可选）<textarea id="difficulty" maxlength="2000" placeholder="此刻有什么让你难以开始？"></textarea></label><p id="state-summary" aria-live="polite"></p><p id="state-message" role="status" aria-live="polite"></p><button class="button primary" type="submit">确认并保存状态</button></form>
+<p class="muted">这是一种行动辅助工具，不用于医学或心理疾病诊断。</p></section>
+<aside class="card state-chat"><h2>AI 对话</h2><p>这里将用于一起理解当前状态。对话功能将在后续步骤接入。</p><p class="muted">现在可以先用滑杆记录自己的感受。</p></aside></div>
+{% endblock %}

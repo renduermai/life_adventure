@@ -23,6 +23,7 @@ PAGES = {
     "journal": {"title": "历练手记", "subtitle": "让真实的行动留下痕迹。", "symbol": "✎"},
     "growth": {"title": "成长与奖励", "subtitle": "让每一步积累被看见。", "symbol": "✦"},
     "data": {"title": "数据与恢复", "subtitle": "导出与找回你的冒险记录。", "symbol": "▣"},
+    "startup": {"title": "启动状态", "subtitle": "先定位此刻，再决定下一步。", "symbol": "◈"},
     "spirit-stones": {"title": "灵石区", "subtitle": "AI 能力中心", "symbol": "◆"},
     "account": {"title": "角色账号", "subtitle": "这里是你的冒险身份。", "symbol": "◉"},
 }
@@ -57,6 +58,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(data_router)
     from app.modules.ai_gateway.router import router as ai_router
     app.include_router(ai_router)
+    from app.modules.startup_state.router import router as startup_router
+    app.include_router(startup_router)
     app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")
     templates = Jinja2Templates(directory=ROOT / "app/templates")
 
@@ -111,6 +114,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/journey", response_class=HTMLResponse)
     def journey(request: Request):
         return render(request, "journey")
+
+    @app.get("/startup", response_class=HTMLResponse)
+    def startup(request: Request):
+        return templates.TemplateResponse(request=request, name="startup.html", context={"pages": PAGES, "page": "startup", "current": PAGES["startup"], "app_name": settings.app_name})
 
     @app.get("/spirit-stones", response_class=HTMLResponse)
     def spirit_stones(request: Request):

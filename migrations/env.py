@@ -15,6 +15,8 @@ from app.modules.growth import models as growth_models  # noqa: F401
 
 from app.modules.ai_gateway import models as ai_models  # noqa: F401
 
+from app.modules.startup_state import models as startup_models  # noqa: F401
+
 config = context.config
 
 
