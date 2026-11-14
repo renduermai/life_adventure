@@ -1,0 +1,7 @@
+{% macro recommendation(kind, id) %}
+<div class="recommendation-widget" data-recommendation-key="{{ kind }}:{{ id }}">
+  <span class="recommendation-badge" data-recommendation-badge>未评估</span>
+  <span class="recommendation-reason" data-recommendation-reason>正在读取当前推荐</span>
+  <a class="button secondary" href="/startup?task_type={{ kind }}&amp;task_id={{ id }}#chat">拆解</a>
+</div>
+{% endmacro %}

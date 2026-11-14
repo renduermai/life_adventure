@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Literal
 from fastapi import APIRouter,Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,Field,ValidationError
@@ -11,6 +12,25 @@ from app.modules.task_recommendation import service
 from app.modules.task_recommendation.models import TaskAnalysis
 
 router=APIRouter(prefix='/api/startup')
+
+@router.get('/target')
+def target(request:Request,task_type:Literal['quest','task'],task_id:UUID):
+ from app.modules.startup_state.context import target_context
+ from app.modules.startup_state.models import StateCurrent,StateSnapshot
+ try:
+  uid=user_id(request)
+  with request.app.state.database.transaction() as db:
+   context=target_context(db,uid,task_type,task_id)
+   recommendations=service.current_view(db,uid)
+   key=task_type+':'+str(task_id)
+   context['recommendation']=next((item for item in recommendations['items'] if item['key']==key),None)
+   context['batch_id']=recommendations.get('batch_id')
+   current=db.get(StateCurrent,uid)
+   snapshot=db.get(StateSnapshot,current.snapshot_id) if current else None
+   context['state']={'pressure':snapshot.pressure,'energy':snapshot.energy,'difficulty':snapshot.difficulty} if snapshot else None
+   return context
+ except AIError as e:return error_response(request,e)
+
 class Refresh(BaseModel): request_id:UUID
 class Correction(BaseModel):
  expected_version:int=Field(ge=1)

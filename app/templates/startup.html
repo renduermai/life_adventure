@@ -10,5 +10,5 @@
 <label>当前困难（可选）<textarea id="difficulty" maxlength="2000" placeholder="此刻有什么让你难以开始？"></textarea></label><p id="state-summary" aria-live="polite"></p><p id="state-message" role="status" aria-live="polite"></p><button class="button primary" type="submit">确认并保存状态</button></form>
 <section><h2>象限任务关键词</h2><p>主动刷新将把有效任务的必要内容发送到灵石区配置的模型，可能产生费用。</p><button id="recommend-refresh" type="button" class="button secondary">分析并刷新任务</button><p id="recommend-message" role="status"></p><div id="recommend-list"></div></section><script src="{{ url_for('static', path='js/recommendations.js') }}" defer></script>
 <p class="muted">这是一种行动辅助工具，不用于医学或心理疾病诊断。</p></section>
-<aside class="card state-chat"><h2>AI 对话</h2><p>这里将用于一起理解当前状态。对话功能将在后续步骤接入。</p><p class="muted">现在可以先用滑杆记录自己的感受。</p></aside></div>
+<aside class="card state-chat" id="chat" tabindex="-1"><div id="breakdown-context" hidden><h2 id="breakdown-heading"></h2><p id="breakdown-description"></p><p id="breakdown-progress"></p><p id="breakdown-status"></p><ul id="breakdown-steps"></ul><a class="button secondary" id="breakdown-return">返回原任务</a><p>已载入拆解上下文，AI 拆解将在第 8 步接入。</p></div><p id="breakdown-error" role="alert"></p><script src="{{ url_for('static', path='js/breakdown_context.js') }}" defer></script><h2>AI 对话</h2><p>这里将用于一起理解当前状态。对话功能将在后续步骤接入。</p><p class="muted">现在可以先用滑杆记录自己的感受。</p></aside></div>
 {% endblock %}

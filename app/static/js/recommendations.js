@@ -17,8 +17,12 @@
    }list.append(section);
   }
  }
- async function load(){try{render(await api('/api/startup/recommendations'));}catch(e){message.textContent=e.message;}}
- button.addEventListener('click',async()=>{button.disabled=true;message.textContent='正在分析，请稍候……';try{render(await api('/api/startup/refresh','POST',{request_id:crypto.randomUUID()}));window.dispatchEvent(new Event('recommendations-refreshed')); }catch(e){message.textContent=e.message+'；已保留上次结果';}finally{button.disabled=false;window.dispatchEvent(new Event('recommendations-refreshed'));}});
+ let readVersion=0;
+ async function load(){if(button.disabled)return;const version=++readVersion;try{const data=await api('/api/startup/recommendations');if(version===readVersion)render(data);}catch(e){if(version===readVersion){list.replaceChildren();document.querySelectorAll('.quadrant .recommend-tags').forEach(x=>x.remove());message.textContent='推荐暂不可用，请稍后刷新';}}}
+ button.addEventListener('click',async()=>{++readVersion;button.disabled=true;message.textContent='正在分析，请稍候……';try{render(await api('/api/startup/refresh','POST',{request_id:crypto.randomUUID()}));window.dispatchEvent(new Event('recommendations-refreshed')); }catch(e){message.textContent=e.message+'；已保留上次结果';}finally{button.disabled=false;window.dispatchEvent(new Event('recommendations-refreshed'));}});
  window.addEventListener('state-saved',load);
+ window.addEventListener('focus',load);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});
+ setInterval(()=>{if(!document.hidden)load();},30000);
  load();
 })();
