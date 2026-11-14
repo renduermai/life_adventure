@@ -4,6 +4,8 @@
 
 **阶段 1.1–1.9 已接入账号、主线、里程碑、副本任务、专注计时、历练手记、奖励、首页仪表盘及数据导出与恢复，等待用户验收。** Supabase 已连接并执行迁移。公网部署尚未实现。
 
+V2 第 2 步灵石区后端已实现；配置、迁移及命令说明见 [本步指南](docs/V2_STEP_2.md)。网页在第 3 步实施。当前数据库迁移目标为 `0008_ai_gateway`。
+
 ## 快速启动（Windows PowerShell）
 
 进入项目根目录后执行；本机 `.venv` 已准备好：
@@ -46,7 +48,7 @@ py -3.11 -m venv .venv
 
 ## 数据库配置
 
-当前开发环境已连接 Supabase 并执行至 `0007_rewards`。新环境需复制 `.env.example` 为 `.env`，在本地填写 DATABASE_URL 和 MIGRATION_DATABASE_URL，然后按 [数据库指南](docs/DATABASE.md) 执行迁移。不要提交密钥。
+当前开发环境已连接 Supabase 并执行至 `0008_ai_gateway`。新环境需复制 `.env.example` 为 `.env`，在本地填写 DATABASE_URL 和 MIGRATION_DATABASE_URL，然后按 [数据库指南](docs/DATABASE.md) 执行迁移。不要提交密钥。
 
 ## 文档
 
@@ -63,4 +65,4 @@ py -3.11 -m venv .venv
 
 ## 下一步
 
-等待用户验收 1.4；等待阶段 1 用户验收；阶段 2 AI 模块需单独授权。
+V2 第 2 步完成验收后停止，第 3 步前端需单独批准。阶段 1 未验证项仍按验收记录保留。

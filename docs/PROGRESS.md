@@ -1,8 +1,16 @@
 # 项目进度
 
+## V2 第 2 步：后端已交付，待用户验收
+
+已新增统一 AI Gateway、配置 CRUD、加密、默认/模块模型选择、连接测试、调用日志和轮换命令，使用 cryptography==50.0.2；无新页面。0008_ai_gateway 已在 Supabase 开发库执行，Alembic metadata check 通过。百炼配置已加密保存至现有账号并设默认，到期日按用户输入为 2026-11-17。
+
+默认测试 71 passed、33 skipped、1 warning；另在同一 Supabase 项目隔离 schema 运行新增后端集成测试：4 passed、1 warning（619.72 秒），含迁移往返和 ORM check，临时 schema 随 fixture 清理。真实供应商通过受控传输测试成功（168 tokens），随后通过数据库支持的 AIService 测试成功（141 tokens）；首次超时是否计费未知，不推算费用。测试仅发送固定短文本，没有发送用户任务或聊天。
+
+网络曾有 DNS 和部分地址超时；数据库验证暂用已解析的公网地址并保留域名/SSL、连接超时增至 20 秒，未修改系统 DNS 或持久化连接地址。真实账号下 TestClient 验证配置、调用日志、未认证拒绝及 readiness 200，临时验证会话已删除。额外旧核心流程回归两次在连接阶段报 ConnectionTimeout，未执行到业务断言；本地 Uvicorn 的一次 readiness 检查为 503、liveness 200。随后本地服务重新启动，最后一次 readiness 为 200；云库间歇性连接失败仍有记录，不能称旧业务完整回归通过。详见 [本步说明](V2_STEP_2.md)。最终数据库复查为 0008_ai_gateway，剩余 ac_tasks_test_* schema 数量为 0。第 3 步未批准、未开始。
+
 更新日期：2026-11-15（Asia/Shanghai）。
 
-## V2 第 1 步：文档交付与检查完成，待用户验收
+## V2 第 1 步交付记录（历史）
 
 用户已以“开始第一步”批准 V2.0 第 1 步。授权范围仅为架构与规划文档；第 2–9 步未批准、未实施。当前业务代码仍为阶段 1.9 基线 `ff99ccb`，无 AI Gateway、启动状态、推荐或拆解功能。
 

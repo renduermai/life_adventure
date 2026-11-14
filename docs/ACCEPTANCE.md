@@ -1,5 +1,19 @@
 # 验收与测试记录
 
+## 2026-11-15 V2 第 2 步验证结果
+
+默认 pytest：71 passed、33 skipped、1 warning（既有 Starlette/httpx 弃用提示），跳过项不是通过。pip check 无依赖冲突；离线 Alembic SQL 测试通过。0008 在线迁移与 metadata check 通过。
+
+真实百炼受控传输连接成功，返回 89 输入/79 输出/168 总 tokens；完整 AIService＋加密配置＋数据库日志链路成功，返回 89 输入/52 输出/141 总 tokens，最近测试状态持久化为 succeeded。首次 IPv6 连接超时的供应商计费未知。
+
+同一 Supabase 项目隔离 schema 新增后端集成测试：4 passed、1 warning，619.72 秒；含配置 HTTP、持久化、默认切换、版本冲突、绑定、越权、安全错误、删除清钥、结构化输出、用量过滤、事务外调用、超时未知状态、并发防重和密钥轮换，以及迁移往返/ORM check。fixture teardown 成功并清理其 schema。早期尝试因 DNS/连接超时失败，后续验证用公开 DNS 已解析地址并临时将连接等待放宽至 20 秒，保留域名/SSL。
+
+真实账号 TestClient 冒烟通过：未认证 401、配置/调用日志 200、默认配置和测试结果持久化、无密钥回显、readiness 200；临时验证会话已删除。另启动本机 Uvicorn 后 HTTP liveness=200、未认证 AI 配置接口=401，但一次 readiness=503（间歇云库连接失败）。额外尝试旧核心 HTTP 流程回归两次均在连接阶段报 ConnectionTimeout，未执行到业务断言，本轮不能记录通过。未修改系统 DNS 或持久化数据库 IP。最终重启本地服务后 readiness 再查为 200；这不抹除先前网络错误或补记旧流程回归成功。
+
+最终复查：公共迁移为 0008_ai_gateway，ac_tasks_test_* schema 数量为 0，无本轮遗留测试 schema。
+
+文档本地链接、改动文件实际凭据检查、pip check 和 diff --check 通过；.env 已确认被 Git 忽略。没有用 SQLite 或模拟数据库冒充真实 PostgreSQL。第 3 步网页、完整浏览器旧业务回归、手机真机、生产部署与供应商原生 JSON 模式未验证。
+
 ## 2026-11-15 V2 第 1 步文档交付
 
 授权：用户“开始第一步”；范围：仅架构、数据、接口、风险与验收规划。交付为 [V2_STARTUP_DESIGN.md](V2_STARTUP_DESIGN.md) 和六份现有文档更新。文档检查完成；用户验收尚未进行。

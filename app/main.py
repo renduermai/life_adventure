@@ -54,6 +54,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(growth_router)
     from app.modules.data_tools.router import router as data_router
     app.include_router(data_router)
+    from app.modules.ai_gateway.router import router as ai_router
+    app.include_router(ai_router)
     app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")
     templates = Jinja2Templates(directory=ROOT / "app/templates")
 

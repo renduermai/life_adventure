@@ -1,5 +1,11 @@
 # 数据模型草案
 
+## 2026-11-15 V2 第 2 步已实施
+
+0008_ai_gateway 新增 ai_configs、ai_module_bindings、ai_call_logs，开发库在线 upgrade 与 ORM 一致性检查通过。加密密钥、唯一默认、版本与创建请求指纹在 ai_configs；绑定和日志用复合外键校验同用户配置；日志不含消息、回复、明文/密文密钥或完整异常。配置软删除时清空密文并移除绑定，日志保留。
+
+当前合计 17 张业务表；本步没有状态/推荐/对话/拆解表，没有修改任务或奖励字段。下面“V2 全部模型待实施”属于第 1 步历史快照；当前以本节和迁移源码为准。
+
 ## 2026-11-15 当前模型与 V2 迁移计划
 
 已实施模型为 users、login_sessions、main_quests、milestones、quest_events、tasks、task_events、task_commands、focus_sessions、focus_segments、activity_logs、activity_events、reward_settings、reward_entries。代码期望迁移为 `0007_rewards`；本步只读核对源码和历史记录，未连接数据库或执行迁移。

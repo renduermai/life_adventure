@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     database_url: SecretStr | None = None
     migration_database_url: SecretStr | None = None
+    ai_encryption_keys: SecretStr | None = None
 
     @field_validator("database_url", "migration_database_url", mode="before")
     @classmethod

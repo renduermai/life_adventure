@@ -1,5 +1,11 @@
 # 总体架构
 
+## 2026-11-15 V2 第 2 步实现
+
+ai_gateway 已实现 models/schemas/security/adapter/service/router/manage；FastAPI 挂载 /api/ai JSON 接口，继续使用数据库会话及同源写入校验。OpenAICompatibleAdapter 隔离协议，AIService 选择本用户配置并用短事务记录调用，模型请求不持有数据库连接。公网地址验证绑定实际 TLS 连接，禁代理/重定向/自动重试。密钥仅在服务端 Fernet 加密解密，默认模型和调用防重以用户锁和数据库唯一约束协调。
+
+本步没有灵石区页面；后续 startup_state/task_recommendation/startup_chat 尚未实施。当前能力及限制见 [V2_STEP_2.md](V2_STEP_2.md)，旧第 1 步“尚无 AI 模块”是交付时历史。
+
 ## 2026-11-15 当前架构与 V2 第 1 步设计
 
 实际代码已到阶段 1.9：FastAPI 模块化单体、SQLAlchemy/Alembic、Supabase PostgreSQL、Jinja2、普通 CSS 与少量 JavaScript；已有 identity、quests、tasks、activity、growth、dashboard、data_tools。现有主题、侧栏、会话、权限、事务、任务命令、计时及奖励复用。HTMX 仍为可选后续工具，不是当前已使用依赖。
