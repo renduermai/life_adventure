@@ -1,5 +1,13 @@
 # 验收与测试记录
 
+## 启动状态四象限散点第2次（2026-11-16）
+
+- 真实开发库只读：当前账号推荐 GET 经 `current_view` 返回4个已分析、2个待确认；6项任务的类型、标题、描述、所属主线与有效详情链接均能从当前用户候选补齐。未重发模型请求，未修改现有主线、副本、状态或批次。
+- 显式 Supabase 隔离 schema 集成：`tests/test_recommendation_reliability_postgres.py` 2 passed、1 warning、234.16秒，包含迁移往返及新增详情字段断言；独立 schema 已清理。
+- 默认 pytest：111 passed、48 skipped、1 warning；跳过的真实数据库测试不计通过。无头 Edge 合成 HTTP：主线/副本形状、详情文本、详情链接点击、10项同象限不重叠、当前状态点坐标独立、待确认不绘点、重试后绘点、重载恢复、390px无横向溢出通过。此浏览器测试使用合成响应，真实账号浏览器交互留给用户验收。
+- 用户验收：登录本机 `/startup`，页面应显示4个真实任务点与2个待确认条目；悬停或键盘选中任务点查看详情，点击进入真实主线或副本。任务点位置是象限内排布，不表示精确数值。修改状态需确认并刷新推荐，旧批次变过期时不绘旧点。
+- 本地服务重启后 `/startup`、`/static/js/recommendations.js` 与 `/health/ready` 均返回200；本轮没有真实模型调用和新增 Token 费用。开发时间与 Codex Token 用量无法准确获取。
+
 ## 启动状态推荐可靠性改进第1次（2026-11-15）
 
 - 真实故障定位：同一实际任务在原512输出Token限制下 HTTP 200、`finish_reason=length`、推理460/总输出512，内容为未结束JSON字符串；1536上限后 `finish_reason=stop` 且 Pydantic `Features` 校验通过。响应提取路径是 `choices[0].message.content`，本次不是字段提取错误。

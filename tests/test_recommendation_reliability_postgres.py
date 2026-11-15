@@ -60,6 +60,10 @@ def test_partial_retry_cache_state_and_persistence(ai, monkeypatch):
     analyzed = next(x for x in body['items'] if x['key'] == 'task:' + str(first))
     pending = next(x for x in body['items'] if x['key'] == 'task:' + str(second))
     assert analyzed['level'] == 'green' and pending['level'] is None
+    assert analyzed['kind'] == 'task' and analyzed['title'] == '读一页书'
+    assert analyzed['description'] == '只读第一段' and analyzed['main_quest'] == '独立副本'
+    assert analyzed['href'] == '/tasks/' + str(first)
+    assert pending['title'] == '整理桌面' and pending['description'] == '将一支笔放进笔筒'
     assert pending['analysis_status'] == 'pending' and pending['error_code'] == 'upstream_timeout'
     assert client.get('/api/startup/recommendations').json()['batch_id'] == body['batch_id']
     with camp['sessions']() as db:

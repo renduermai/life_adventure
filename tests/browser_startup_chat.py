@@ -31,7 +31,10 @@ def run():
     calls = []
     sid, cid = '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'
     stamp = '2026-11-15T08:00:00+08:00'
-    item = dict(key='task:example', keyword='整理一支笔', href='/tasks/example', quadrants=['降噪区'], level='green', reason='动作很小，适合起步', stale=False, analysis_id=sid, analysis_version=1)
+    item = dict(key='task:example', kind='task', title='整理桌面', description='先整理一支笔',
+                main_quest='让工作区更清爽', keyword='整理一支笔', href='/tasks/example',
+                quadrants=['降噪区'], level='green', reason='动作很小，适合起步',
+                stale=False, analysis_status='analyzed', analysis_id=sid, analysis_version=1)
 
     def respond(route):
         nonlocal saved, batch, current_items
@@ -71,8 +74,8 @@ def run():
                 if target:
                     retry_targets.append(target)
                     batch = 'recovered-test-batch'
-                    current_items = [item, dict(item, key=target, keyword='打开文档',
-                        href='/tasks/example2', level='white', analysis_status='analyzed')]
+                    current_items = [item, dict(item, key=target, title='阅读资料', keyword='打开文档',
+                        href='/tasks/example2', quadrants=['降噪区'], level='white', analysis_status='analyzed')]
                 else:
                     batch = 'partial-test-batch'
                     current_items = [item, dict(item, key='task:example2', keyword='打开文档',
@@ -124,20 +127,53 @@ def run():
             page.locator('#recommend-refresh').click()
             expect(page.locator('#chat-top-tasks a')).to_have_text('整理一支笔')
             expect(page.locator('#chat-top-tasks')).to_have_attribute('data-batch-id', batch)
+            expect(page.locator('#task-scatter a')).to_have_count(1)
+            marker = page.locator('#task-scatter a').first
+            expect(marker).to_have_attribute('href', '/tasks/example')
+            marker.hover()
+            expect(page.locator('#scatter-detail')).to_contain_text('整理桌面')
+            expect(page.locator('#scatter-detail')).to_contain_text('先整理一支笔')
+            expect(page.locator('#scatter-detail')).to_contain_text('让工作区更清爽')
+            expect(page.locator('#scatter-detail')).to_contain_text('适合起步')
             partial_mode = True
             page.locator('#recommend-refresh').click()
             expect(page.get_by_role('button', name='单独重试')).to_have_count(1)
+            expect(page.locator('#task-scatter a')).to_have_count(1)
+            expect(page.locator('#recommend-list h3').last).to_have_text('待确认')
+            expect(page.locator('#recommend-list section').last).to_contain_text('打开文档')
             page.get_by_role('button', name='单独重试').click()
             expect(page.get_by_role('button', name='单独重试')).to_have_count(0)
+            expect(page.locator('#task-scatter a')).to_have_count(2)
             assert retry_targets == ['task:example2']
             refresh_fails = True
             page.locator('#recommend-refresh').click()
             expect(page.locator('#recommend-message')).to_contain_text('测试：模型暂不可用')
             expect(page.locator('#chat-top-tasks a')).to_have_text('整理一支笔')
             page.reload()
+            expect(page.locator('#task-scatter a')).to_have_count(2)
             expect(page.locator('#chat-messages .chat-turn')).to_have_count(2)
             expect(page.locator('#pressure')).to_have_value('79')
             expect(page.locator('#chat-more')).to_be_hidden()
+            original_items = current_items
+            current_items = [dict(item, key=f'task:overlap{i}', title=f'任务{i}', href=f'/tasks/overlap{i}')
+                             for i in range(10)]
+            page.reload()
+            markers = page.locator('#task-scatter a')
+            expect(markers).to_have_count(10)
+            positions = markers.evaluate_all('(nodes) => nodes.map(n => n.style.left + "," + n.style.top)')
+            assert len(set(positions)) == 10, positions
+            assert page.locator('#state-dot').get_attribute('cx') == '79'
+            current_items = original_items + [dict(item, key='quest:example', kind='quest',
+                title='让工作区更清爽', description='完成桌面整理', main_quest='让工作区更清爽',
+                href='/quests/example', quadrants=['投入区'])]
+            page.reload()
+            expect(page.locator('#task-scatter a')).to_have_count(3)
+            expect(page.locator('.task-marker-quest')).to_have_count(1)
+            page.locator('.task-marker-quest').click()
+            assert page.url.endswith('/quests/example')
+            page.go_back()
+            current_items = original_items
+            page.reload()
             out = Path(tempfile.gettempdir()) / 'adventure-step7-verification'
             out.mkdir(exist_ok=True)
             page.evaluate('window.scrollTo(0,0)')
@@ -146,6 +182,8 @@ def run():
             page.evaluate('window.scrollTo(0,0)')
             expect(page.locator('#sidebar')).to_be_hidden()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            page.locator('#task-scatter a').first.focus()
+            expect(page.locator('#scatter-detail')).to_contain_text('推荐理由')
             page.screenshot(path=str(out/'mobile-final.png'), full_page=True)
             page.locator('#theme-toggle').click()
             expect(page.locator('html')).to_have_attribute('data-theme','light')

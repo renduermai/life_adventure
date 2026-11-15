@@ -1,5 +1,7 @@
 # 数据模型草案
 
+启动状态散点第2次不新增表或迁移。推荐 GET 在现有批次结果上临时补充当前用户有效任务的 `kind`、`title`、`description`、`main_quest` 和 `href`；这些不是新的持久化字段。仅 `analysis_status=analyzed` 且批次非过期的分类可显示标记；`quadrants[0]` 是主要展示象限，并无任务精确压力/能量坐标。
+
 启动状态推荐可靠性改进：`0013_recommendation_reliability` 为 `recommendation_batches` 增加可空 `error_code`，记录系统性失败。`results` JSON 中每个目标增加 `analysis_status`、`error_code` 与 `config_signature`；已分析项引用独立持久化的 `task_analysis_cache`，待分析项 `level=null`。批次仍绑定单一已确认 `snapshot_id`，状态或任务在生成期间变化时不发布该批次。
 
 ## V2 第 8 步（2026-11-15）

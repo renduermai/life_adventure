@@ -87,6 +87,7 @@ def current_view(db,uid):
   if latest and latest.status=='building':
    return {'items':[],'status':'building','message':'任务分析尚未完成；如等待过久，可再次刷新，已完成的特征会复用'}
   return {'items':[],'status':'not_analyzed','message':'尚未分析任务'}
+ quest_titles={str(quest.id):quest.title for quest in db.scalars(select(MainQuest).where(MainQuest.user_id==uid,MainQuest.deleted_at.is_(None)))}
  items=[]
  for stored in batch.results:
   target=live.get(stored['key'])
@@ -96,7 +97,11 @@ def current_view(db,uid):
   stale=(batch.snapshot_id!=current.snapshot_id or target['fingerprint']!=stored['fingerprint'] or signature is None or
          (stored.get('config_signature') is not None and stored['config_signature']!=signature) or
          (analyzed and (not analysis or analysis.version!=stored['analysis_version'] or analysis.config_signature!=signature)))
-  items.append({**stored,'analysis_status':'analyzed' if analyzed else 'pending','stale':stale,'level':None if stale else stored['level'],'href':('/quests/' if target['kind']=='quest' else '/tasks/')+str(target['id'])})
+  parent_id=target['context'].get('main_quest_id')
+  items.append({**stored,'analysis_status':'analyzed' if analyzed else 'pending','stale':stale,'level':None if stale else stored['level'],
+                'kind':target['kind'],'title':target['title'],'description':target['description'] or '',
+                'main_quest':target['title'] if target['kind']=='quest' else quest_titles.get(parent_id,'独立副本'),
+                'href':('/quests/' if target['kind']=='quest' else '/tasks/')+str(target['id'])})
  success=sum(x['analysis_status']=='analyzed' and not x['stale'] for x in items)
  pending=sum(x['analysis_status']=='pending' and not x['stale'] for x in items)
  outdated=sum(x['stale'] for x in items)
