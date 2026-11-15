@@ -9,6 +9,8 @@ from app.modules.startup_chat.schemas import MessageInput, StateAdvice
 from app.modules.startup_state.models import StateCurrent, StateSnapshot
 from app.modules.ai_gateway.security import AIError
 from app.modules.quests.models import MainQuest
+from app.modules.tasks import service as task_service
+from app.modules.task_recommendation import service as recommendation
 from test_ai_postgres import ai, make, task_engine, camp
 from test_startup_chat import advice
 
@@ -36,7 +38,7 @@ def test_chat_confirmation_history_and_shared_refresh(ai, monkeypatch):
     first=send(client).json();assert first['status']=='succeeded' and not first['response']['ready']
     assert save(client,first['id']).status_code==409
     second=send(client,'压力偏高，想先理清一件事',first['conversation_id'],1).json()
-    assert seen[1][1]['content']=='精力还行但事情太多'
+    assert seen[1][2]['content']=='精力还行但事情太多'
     with camp['sessions']() as db: assert db.get(StateCurrent,camp['user']) is None
     confirmed=save(client,second['id']);assert confirmed.status_code==200,confirmed.text
     snapshot=confirmed.json()
@@ -125,3 +127,45 @@ def test_paginated_history(ai,monkeypatch):
     page=client.get(url).json();assert len(page['items'])==20 and page['next_before']==4
     older=client.get(url+'?before=4').json();assert [t['sequence'] for t in older['items']]==[1,2,3]
     assert older['next_before'] is None
+
+
+def test_selected_real_task_context_and_conversation_memory(ai, monkeypatch):
+    camp, settings, app, client = ai
+    make(ai)
+    with camp['sessions'].begin() as db:
+        task_id = task_service.execute(db, camp['user'], uuid4(), 'create',
+            {'title': '整理一支笔', 'description': '把桌上一支笔放进笔筒', 'main_quest_id': str(camp['quest'])})
+        other_id = task_service.execute(db, camp['other'], uuid4(), 'create',
+            {'title': '另一人的任务', 'description': '不能出现在对话里'})
+    key = 'task:' + str(task_id)
+    seen = []
+
+    def provider(self, uid, purpose, messages, request_id, output_schema=None, **kwargs):
+        if purpose == 'task_analysis':
+            return {'content': recommendation.Features(keyword='放一支笔', quadrants=['投入区'],
+                effort=1, barrier=0, clear_next=True, reason='动作很小')}
+        seen.append(messages)
+        return {'content': StateAdvice(**advice(ready=False, pressure=None, energy=None,
+            reply='先把一支笔拿起来即可，暂时不用整理整张桌子。'))}
+
+    monkeypatch.setattr(service.AIService, 'generate', provider)
+    state = save(client).json()
+    refreshed = client.post('/api/startup/refresh', headers=HEADERS,
+        json={'request_id': str(uuid4()), 'expected_snapshot_id': state['snapshot_id']})
+    assert refreshed.status_code == 200, refreshed.text
+    response = send(client, '第一步仍然太难', selected_target_key=key)
+    assert response.status_code == 200, response.text
+    turn = response.json()
+    assert turn['status'] == 'succeeded' and '一支笔' in turn['response']['reply']
+    assert client.get('/api/startup/chat/conversations/' + turn['conversation_id']).json()['selected_target_key'] == key
+    context = seen[0][2]['content']
+    assert '整理一支笔' in context and '把桌上一支笔放进笔筒' in context
+    assert '动作很小' in context and '另一人的任务' not in context
+    assert '"pressure": 65' in seen[0][1]['content']
+    assert client.get('/api/startup/current').json()['snapshot_id'] == state['snapshot_id']
+    assert client.patch('/api/startup/chat/conversations/' + turn['conversation_id'] + '/selection',
+        headers=HEADERS, json={'selected_target_key': 'task:' + str(other_id)}).status_code == 409
+    cleared = client.patch('/api/startup/chat/conversations/' + turn['conversation_id'] + '/selection',
+        headers=HEADERS, json={'selected_target_key': None})
+    assert cleared.status_code == 200
+    assert client.get('/api/startup/chat/conversations/' + turn['conversation_id']).json()['selected_target_key'] is None

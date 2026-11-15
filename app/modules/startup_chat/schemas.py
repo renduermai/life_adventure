@@ -8,6 +8,12 @@ class MessageInput(BaseModel):
     conversation_id: UUID | None = None
     expected_version: StrictInt = Field(ge=0)
     message: str = Field(min_length=1, max_length=2000)
+    selected_target_key: str | None = Field(default=None, pattern=r'^(quest|task):[0-9a-fA-F-]{36}$')
+
+
+class SelectionInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    selected_target_key: str | None = Field(default=None, pattern=r'^(quest|task):[0-9a-fA-F-]{36}$')
 
 
 class StateAdvice(BaseModel):

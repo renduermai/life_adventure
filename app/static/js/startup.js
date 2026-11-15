@@ -6,9 +6,11 @@
   function announce() { window.dispatchEvent(new Event('state-readiness')); }
   function preview() {
     const p=Number(pressure.value), e=Number(energy.value);
+    state.pressure=p;state.energy=e;state.difficulty=difficulty.value;
     document.querySelector('#pressure-output').textContent=p;document.querySelector('#energy-output').textContent=e;
     const dot=document.querySelector('#state-dot');dot.setAttribute('cx',Math.max(2.5,Math.min(97.5,p)));dot.setAttribute('cy',Math.max(2.5,Math.min(97.5,100-e)));
     const name=e>=50?(p<50?'投入区':'降噪区'):(p<50?'激活区':'修复区');
+    state.quadrant=name;
     summary.textContent=`当前预览：${name} · 压力 ${p} · 能量 ${e}（请确认后保存）`;
   }
   function changed() { ++readVersion;state.confirmed=false;pending=null;preview();announce(); }
@@ -50,6 +52,7 @@
       const response=await fetch('/api/startup/states',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pending)});const data=await response.json();
       if(!response.ok){if(response.status===409)pending=null;throw Error(data.error||'保存失败');}
       generation=data.generation;pending=null;source=null;sourcePlan=null;state.snapshotId=data.snapshot_id;state.confirmed=true;
+      state.pressure=data.pressure;state.energy=data.energy;state.difficulty=data.difficulty;state.quadrant=data.quadrant;
       summary.textContent=`已保存：${data.quadrant} · 压力 ${data.pressure} · 能量 ${data.energy}`;message.textContent='已确认，现在可以刷新象限与推荐。';
       window.dispatchEvent(new Event('state-saved'));
     } catch(error){message.textContent=error.message;}

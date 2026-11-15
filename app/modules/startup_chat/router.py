@@ -6,7 +6,7 @@ from app.modules.ai_gateway.router import body, error_response, user_id
 from app.modules.ai_gateway.security import AIError
 from app.modules.startup_chat import service
 from app.modules.startup_chat.models import Conversation, ChatTurn
-from app.modules.startup_chat.schemas import MessageInput
+from app.modules.startup_chat.schemas import MessageInput, SelectionInput
 
 router = APIRouter(prefix='/api/startup/chat')
 
@@ -17,7 +17,7 @@ def conversations(request: Request, offset: int = Query(default=0, ge=0)):
         uid = user_id(request)
         with request.app.state.database.transaction() as db:
             rows = list(db.scalars(select(Conversation).where(Conversation.user_id == uid).order_by(Conversation.created_at.desc(), Conversation.id.desc()).offset(offset).limit(21)))
-            return {'items': [{'id': r.id, 'title': r.title, 'version': r.version, 'created_at': r.created_at} for r in rows[:20]], 'next_offset': offset + 20 if len(rows) > 20 else None}
+            return {'items': [{'id': r.id, 'title': r.title, 'version': r.version, 'selected_target_key': r.selected_target_key, 'created_at': r.created_at} for r in rows[:20]], 'next_offset': offset + 20 if len(rows) > 20 else None}
     except AIError as exc:
         return error_response(request, exc)
 
@@ -32,7 +32,7 @@ def history(request: Request, cid: UUID, before: int | None = Query(default=None
             if before is not None:
                 query = query.where(ChatTurn.sequence < before)
             rows = list(db.scalars(query.order_by(ChatTurn.sequence.desc()).limit(21)))
-            return {'id': cid, 'version': chat.version, 'items': [service.public(r) for r in reversed(rows[:20])], 'next_before': rows[19].sequence if len(rows) > 20 else None}
+            return {'id': cid, 'version': chat.version, 'selected_target_key': chat.selected_target_key, 'items': [service.public(r) for r in reversed(rows[:20])], 'next_before': rows[19].sequence if len(rows) > 20 else None}
     except AIError as exc:
         return error_response(request, exc)
 
@@ -43,5 +43,15 @@ async def send(request: Request):
         data = await body(request, MessageInput)
         uid = await run_in_threadpool(user_id, request)
         return await run_in_threadpool(service.send, request.app.state.database, request.app.state.settings, uid, data)
+    except AIError as exc:
+        return error_response(request, exc)
+
+
+@router.patch('/conversations/{cid}/selection')
+async def selection(request: Request, cid: UUID):
+    try:
+        data = await body(request, SelectionInput)
+        uid = await run_in_threadpool(user_id, request)
+        return await run_in_threadpool(service.select_target, request.app.state.database, uid, cid, data.selected_target_key)
     except AIError as exc:
         return error_response(request, exc)

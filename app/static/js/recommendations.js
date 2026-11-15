@@ -45,6 +45,7 @@
    for(const item of data.items.filter(x=>quadrant==='待确认' ? x.stale||x.analysis_status==='pending'||!x.quadrants?.length : !x.stale&&x.analysis_status!=='pending'&&x.quadrants?.includes(quadrant))) {
     const row=document.createElement('p'),link=document.createElement('a');link.textContent=item.keyword;link.href=item.href;link.className='task-title';row.append(link);
     const reason=document.createElement('span');reason.textContent=' · '+(item.stale?'已过期，请刷新':item.reason);row.append(reason);
+    const discuss=document.createElement('button');discuss.type='button';discuss.className='button secondary';discuss.textContent='与 AI 讨论';discuss.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('coach-select-task',{detail:item})));row.append(discuss);
     if(!item.stale&&item.analysis_status==='pending'&&item.error_code!=='insufficient_information'){const retry=document.createElement('button');retry.type='button';retry.className='button secondary';retry.textContent='单独重试';retry.addEventListener('click',()=>refresh(item.key));row.append(retry);}
     if(!item.stale&&item.analysis_status!=='pending'&&item.analysis_id) {const edit=document.createElement('button');edit.type='button';edit.className='button secondary';edit.textContent='修正象限';edit.addEventListener('click',async()=>{
      const selected=prompt('输入象限：投入区、降噪区、激活区或修复区',item.quadrants[0]||'投入区');if(selected===null)return;if(!['投入区','降噪区','激活区','修复区'].includes(selected)){message.textContent='请输入一个有效象限';return;}

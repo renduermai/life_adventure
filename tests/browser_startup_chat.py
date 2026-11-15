@@ -28,16 +28,19 @@ def run():
     partial_mode = False
     current_items = []
     retry_targets = []
+    selected_key = None
     calls = []
     sid, cid = '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'
+    tid, tid2 = '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000004'
+    task_key, second_key = 'task:' + tid, 'task:' + tid2
     stamp = '2026-11-15T08:00:00+08:00'
-    item = dict(key='task:example', kind='task', title='整理桌面', description='先整理一支笔',
-                main_quest='让工作区更清爽', keyword='整理一支笔', href='/tasks/example',
+    item = dict(key=task_key, kind='task', title='整理桌面', description='先整理一支笔',
+                main_quest='让工作区更清爽', keyword='整理一支笔', href='/tasks/' + tid,
                 quadrants=['降噪区'], level='green', reason='动作很小，适合起步',
                 stale=False, analysis_status='analyzed', analysis_id=sid, analysis_version=1)
 
     def respond(route):
-        nonlocal saved, batch, current_items
+        nonlocal saved, batch, current_items, selected_key
         request = route.request
         path = request.url.split('8766')[1].split('?')[0]
         calls.append((request.method, path))
@@ -47,18 +50,25 @@ def run():
         elif path == '/api/startup/history':
             value = {'items': [saved] if saved else [], 'next_offset': None}
         elif path == '/api/startup/chat/conversations':
-            value = {'items': [dict(id=cid, title='合成验收对话', version=len(turns))] if turns else [], 'next_offset': None}
+            value = {'items': [dict(id=cid, title='合成验收对话', version=len(turns), selected_target_key=selected_key)] if turns else [], 'next_offset': None}
+        elif path.endswith('/selection'):
+            selected_key = request.post_data_json['selected_target_key']
+            value = {'selected_target_key': selected_key}
         elif path.endswith('/conversations/' + cid):
-            value = {'id': cid, 'version': len(turns), 'items': turns, 'next_before': None}
+            value = {'id': cid, 'version': len(turns), 'selected_target_key': selected_key, 'items': turns, 'next_before': None}
         elif path == '/api/startup/chat/messages':
             data = request.post_data_json
-            ready = bool(turns)
+            selected_key = data.get('selected_target_key')
+            tiny = '太难' in data['message']
+            ready = bool(turns) and not tiny
             value = dict(id=str(len(turns)+3), conversation_id=cid, sequence=len(turns)+1,
                          base_generation=0, message=data['message'], status='succeeded', created_at=stamp,
-                         response=dict(reply='建议压力80，能量70，可以修改。' if ready else '现在精力怎么样？', ready=ready,
+                         response=dict(reply='先拿起一支笔即可，不用整理整张桌子。' if tiny else '建议压力80，能量70，可以修改。' if ready else '现在精力怎么样？', ready=ready,
                                        pressure=80 if ready else None, energy=70 if ready else None,
                                        difficulty='事情多', barrier='不知先做什么', goal='先做一件小事'))
             turns.append(value)
+        elif path == '/api/startup/target':
+            value = dict(item, id=tid, recommendation=item, progress=0, status='todo', steps=[])
         elif path == '/api/startup/states':
             data = request.post_data_json
             assert data['confirmed'] and data['source_turn_id'] == '4'
@@ -75,11 +85,11 @@ def run():
                     retry_targets.append(target)
                     batch = 'recovered-test-batch'
                     current_items = [item, dict(item, key=target, title='阅读资料', keyword='打开文档',
-                        href='/tasks/example2', quadrants=['降噪区'], level='white', analysis_status='analyzed')]
+                        href='/tasks/' + tid2, quadrants=['降噪区'], level='white', analysis_status='analyzed')]
                 else:
                     batch = 'partial-test-batch'
-                    current_items = [item, dict(item, key='task:example2', keyword='打开文档',
-                        href='/tasks/example2', quadrants=[], level=None, analysis_status='pending',
+                    current_items = [item, dict(item, key=second_key, keyword='打开文档',
+                        href='/tasks/' + tid2, quadrants=[], level=None, analysis_status='pending',
                         analysis_id=None, error_code='upstream_timeout', reason='模型响应超时')]
             else:
                 batch = 'shared-test-batch'
@@ -127,14 +137,35 @@ def run():
             page.locator('#recommend-refresh').click()
             expect(page.locator('#chat-top-tasks a')).to_have_text('整理一支笔')
             expect(page.locator('#chat-top-tasks')).to_have_attribute('data-batch-id', batch)
+            expect(page.locator('#coach-state-summary')).to_contain_text('压力 79 · 能量 70')
             expect(page.locator('#task-scatter a')).to_have_count(1)
             marker = page.locator('#task-scatter a').first
-            expect(marker).to_have_attribute('href', '/tasks/example')
+            expect(marker).to_have_attribute('href', '/tasks/' + tid)
             marker.hover()
             expect(page.locator('#scatter-detail')).to_contain_text('整理桌面')
             expect(page.locator('#scatter-detail')).to_contain_text('先整理一支笔')
             expect(page.locator('#scatter-detail')).to_contain_text('让工作区更清爽')
             expect(page.locator('#scatter-detail')).to_contain_text('适合起步')
+            page.get_by_role('button', name='讨论', exact=True).click()
+            expect(page.locator('#coach-selected')).to_contain_text('整理桌面')
+            assert selected_key == task_key
+            page.locator('#chat-input').fill('第一步仍然太难')
+            page.locator('#chat-form button').click()
+            expect(page.locator('.chat-answer').last).to_contain_text('先拿起一支笔')
+            assert selected_key == task_key and saved['pressure'] == 79
+            expect(page.locator('#recommend-refresh')).to_be_enabled()
+            expect(page.locator('#coach-breakdown')).to_be_visible()
+            page.route('**/startup?task_type=**', lambda route: route.fulfill(status=200, body='<html>拆解模式</html>'))
+            page.locator('#coach-breakdown').click()
+            assert 'task_type=task' in page.url and 'task_id=' + tid in page.url and 'generate=' in page.url
+            page.go_back()
+            expect(page.locator('#coach-selected')).to_contain_text('整理桌面')
+            expect(page.locator('#coach-state-summary')).to_contain_text('压力 79')
+            page.locator('#chat-new').click()
+            expect(page.locator('#recommend-refresh')).to_be_enabled()
+            expect(page.locator('#coach-selected')).to_contain_text('尚未选择任务')
+            page.locator('#chat-conversations').select_option(cid)
+            expect(page.locator('#coach-selected')).to_contain_text('整理桌面')
             partial_mode = True
             page.locator('#recommend-refresh').click()
             expect(page.get_by_role('button', name='单独重试')).to_have_count(1)
@@ -144,18 +175,19 @@ def run():
             page.get_by_role('button', name='单独重试').click()
             expect(page.get_by_role('button', name='单独重试')).to_have_count(0)
             expect(page.locator('#task-scatter a')).to_have_count(2)
-            assert retry_targets == ['task:example2']
+            assert retry_targets == [second_key]
             refresh_fails = True
             page.locator('#recommend-refresh').click()
             expect(page.locator('#recommend-message')).to_contain_text('测试：模型暂不可用')
             expect(page.locator('#chat-top-tasks a')).to_have_text('整理一支笔')
             page.reload()
             expect(page.locator('#task-scatter a')).to_have_count(2)
-            expect(page.locator('#chat-messages .chat-turn')).to_have_count(2)
+            expect(page.locator('#chat-messages .chat-turn')).to_have_count(3)
+            expect(page.locator('#coach-selected')).to_contain_text('整理桌面')
             expect(page.locator('#pressure')).to_have_value('79')
             expect(page.locator('#chat-more')).to_be_hidden()
             original_items = current_items
-            current_items = [dict(item, key=f'task:overlap{i}', title=f'任务{i}', href=f'/tasks/overlap{i}')
+            current_items = [dict(item, key=f'task:00000000-0000-0000-0000-{i:012d}', title=f'任务{i}', href=f'/tasks/overlap{i}')
                              for i in range(10)]
             page.reload()
             markers = page.locator('#task-scatter a')
@@ -163,7 +195,7 @@ def run():
             positions = markers.evaluate_all('(nodes) => nodes.map(n => n.style.left + "," + n.style.top)')
             assert len(set(positions)) == 10, positions
             assert page.locator('#state-dot').get_attribute('cx') == '79'
-            current_items = original_items + [dict(item, key='quest:example', kind='quest',
+            current_items = original_items + [dict(item, key='quest:00000000-0000-0000-0000-000000000005', kind='quest',
                 title='让工作区更清爽', description='完成桌面整理', main_quest='让工作区更清爽',
                 href='/quests/example', quadrants=['投入区'])]
             page.reload()
@@ -189,7 +221,7 @@ def run():
             expect(page.locator('html')).to_have_attribute('data-theme','light')
             page.screenshot(path=str(out/'mobile-light.png'), full_page=True)
             assert not errors, errors
-            assert len([c for c in calls if c == ('POST', '/api/startup/chat/messages')]) == 2
+            assert len([c for c in calls if c == ('POST', '/api/startup/chat/messages')]) == 3
             browser.close()
             print('PASS: follow-up, advice, manual edit, confirmation gate, shared recommendation, failure, history, hidden controls, 390px, light/dark; synthetic HTTP fixtures.')
     finally:

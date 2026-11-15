@@ -187,7 +187,7 @@ class AIService:
             log_id,version,url,model=log.id,config.config_version,config.base_url,config.model_id
         error=None; content=None; usage=None
         try:
-            content,usage=OpenAICompatibleAdapter(post_json).generate(url,key,model,messages,output_schema,max_tokens=1536 if purpose in {'breakdown','task_analysis'} else 512)
+            content,usage=OpenAICompatibleAdapter(post_json).generate(url,key,model,messages,output_schema,max_tokens=1536 if purpose in {'breakdown','task_analysis','startup_state'} else 512)
         except AIError as exc:
             error=exc
         except Exception:
