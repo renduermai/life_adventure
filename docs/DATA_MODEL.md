@@ -1,5 +1,7 @@
 # 数据模型草案
 
+启动状态推荐可靠性改进：`0013_recommendation_reliability` 为 `recommendation_batches` 增加可空 `error_code`，记录系统性失败。`results` JSON 中每个目标增加 `analysis_status`、`error_code` 与 `config_signature`；已分析项引用独立持久化的 `task_analysis_cache`，待分析项 `level=null`。批次仍绑定单一已确认 `snapshot_id`，状态或任务在生成期间变化时不发布该批次。
+
 ## V2 第 8 步（2026-11-15）
 
 0012_breakdown 增加 breakdown_plans：同用户目标复合外键、snapshot_id、previous_id、请求/上下文指纹、草稿与revision、模型来源、确认指纹/时间、正式对象mapping、执行关联、清单状态/版本/事件JSON。生命周期 generating/draft/confirmed/failed/superseded；步骤UUID由服务器生成，历史方案保留。

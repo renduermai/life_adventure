@@ -1,5 +1,16 @@
 # 验收与测试记录
 
+## 启动状态推荐可靠性改进第1次（2026-11-15）
+
+- 真实故障定位：同一实际任务在原512输出Token限制下 HTTP 200、`finish_reason=length`、推理460/总输出512，内容为未结束JSON字符串；1536上限后 `finish_reason=stop` 且 Pydantic `Features` 校验通过。响应提取路径是 `choices[0].message.content`，本次不是字段提取错误。
+- 真实账号刷新：1主线+5副本共6候选，4个有描述的目标逐项成功并持久化缓存，2个无描述标记 `insufficient_information`、等级为空；批次状态 partial。再次刷新新增模型调用0，重建数据库连接后读取相同4/2结果。未改主线、副本或拆解数据。
+- 隔离 PostgreSQL：`tests/test_recommendation_reliability_postgres.py` 2 passed、1 warning、215.21秒，验证单项超时后其他成果持久化、只重试失败目标、状态变化不重调模型且改变适配色、任务内容变化重调相应目标、系统性失败保留旧批次；fixture包含迁移往返和 ORM check。前两轮分别遇到测试输入缺标题及云库连接超时，修正/重试后的完整结果如上。
+- 默认 pytest：111 passed、48 skipped、1 warning，跳过项未计通过。无头Edge合成HTTP验证部分结果、单项重试、失败提示和第7步原有对话流程通过；JS语法、Python编译、pip check、git diff --check通过。
+- 用户验收：登录 `/startup`，确认状态后点“刷新象限与推荐”；当前真实数据应显示4项已分析、2项待分析并说明描述不足。无需为已分析任务重复消耗模型额度。第2次散点与第3次对话交互未实施。
+
+本地服务已重启，`/startup`、推荐脚本及 `/health/ready` 返回200。
+
+
 ## V2 第 8 步（2026-11-15）
 
 - 默认回归：110 passed、46 skipped、1 warning（既有 Starlette/httpx 弃用）；未配置测试库的默认跳过项不能视作通过。

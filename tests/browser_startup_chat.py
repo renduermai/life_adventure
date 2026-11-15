@@ -25,13 +25,16 @@ def run():
     turns = []
     batch = None
     refresh_fails = False
+    partial_mode = False
+    current_items = []
+    retry_targets = []
     calls = []
     sid, cid = '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'
     stamp = '2026-11-15T08:00:00+08:00'
     item = dict(key='task:example', keyword='整理一支笔', href='/tasks/example', quadrants=['降噪区'], level='green', reason='动作很小，适合起步', stale=False, analysis_id=sid, analysis_version=1)
 
     def respond(route):
-        nonlocal saved, batch
+        nonlocal saved, batch, current_items
         request = route.request
         path = request.url.split('8766')[1].split('?')[0]
         calls.append((request.method, path))
@@ -63,10 +66,26 @@ def run():
             if refresh_fails:
                 route.fulfill(status=503, json={'error': '测试：模型暂不可用'})
                 return
-            batch = 'shared-test-batch'
-            value = {'batch_id': batch, 'items': [item], 'message': '推荐已更新'}
+            if partial_mode:
+                target = request.post_data_json.get('target_key')
+                if target:
+                    retry_targets.append(target)
+                    batch = 'recovered-test-batch'
+                    current_items = [item, dict(item, key=target, keyword='打开文档',
+                        href='/tasks/example2', level='white', analysis_status='analyzed')]
+                else:
+                    batch = 'partial-test-batch'
+                    current_items = [item, dict(item, key='task:example2', keyword='打开文档',
+                        href='/tasks/example2', quadrants=[], level=None, analysis_status='pending',
+                        analysis_id=None, error_code='upstream_timeout', reason='模型响应超时')]
+            else:
+                batch = 'shared-test-batch'
+                current_items = [item]
+            value = {'batch_id': batch, 'items': current_items, 'message':
+                     '已分析 1 项，待分析 1 项' if partial_mode and not retry_targets else '推荐已更新'}
         elif path == '/api/startup/recommendations':
-            value = {'batch_id': batch, 'items': [item] if batch else [], 'message': '确认后刷新推荐'}
+            value = {'batch_id': batch, 'items': current_items, 'message':
+                     '已分析 1 项，待分析 1 项' if partial_mode and not retry_targets else '确认后刷新推荐'}
         else:
             raise AssertionError('Unexpected API: ' + path)
         route.fulfill(json=value)
@@ -105,6 +124,12 @@ def run():
             page.locator('#recommend-refresh').click()
             expect(page.locator('#chat-top-tasks a')).to_have_text('整理一支笔')
             expect(page.locator('#chat-top-tasks')).to_have_attribute('data-batch-id', batch)
+            partial_mode = True
+            page.locator('#recommend-refresh').click()
+            expect(page.get_by_role('button', name='单独重试')).to_have_count(1)
+            page.get_by_role('button', name='单独重试').click()
+            expect(page.get_by_role('button', name='单独重试')).to_have_count(0)
+            assert retry_targets == ['task:example2']
             refresh_fails = True
             page.locator('#recommend-refresh').click()
             expect(page.locator('#recommend-message')).to_contain_text('测试：模型暂不可用')

@@ -34,6 +34,7 @@ def target(request:Request,task_type:Literal['quest','task'],task_id:UUID):
 class Refresh(BaseModel):
  request_id:UUID
  expected_snapshot_id:UUID|None=None
+ target_key:str|None=Field(default=None,pattern=r'^(quest|task):[0-9a-fA-F-]{36}$')
 class Correction(BaseModel):
  expected_version:int=Field(ge=1)
  keyword:str=Field(min_length=1,max_length=30)
@@ -50,7 +51,7 @@ async def refresh(request:Request):
  same_origin(request)
  try:
   uid=await run_in_threadpool(user_id,request);data=Refresh.model_validate_json(await request.body())
-  await run_in_threadpool(service.refresh,request.app.state.database,request.app.state.settings,uid,data.request_id,data.expected_snapshot_id)
+  await run_in_threadpool(service.refresh,request.app.state.database,request.app.state.settings,uid,data.request_id,data.expected_snapshot_id,data.target_key)
   return await run_in_threadpool(view,request)
  except ValidationError:return JSONResponse({'error':'请求编号无效'},422)
  except AIError as e:return error_response(request,e)

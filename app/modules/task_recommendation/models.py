@@ -28,4 +28,5 @@ class RecommendationBatch(Base):
  generation:Mapped[int]=mapped_column(Integer)
  status:Mapped[str]=mapped_column(String(20))
  results:Mapped[list]=mapped_column(JSON,default=list)
+ error_code:Mapped[str|None]=mapped_column(String(50))
  created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),server_default=func.now())

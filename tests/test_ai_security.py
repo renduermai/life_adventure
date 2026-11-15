@@ -91,3 +91,23 @@ def test_generation_wait_uses_remaining_total_budget(monkeypatch):
     factory.assert_called_once_with('example.com','8.8.8.8',timeout=10)
     assert connection.sock.settimeout.call_args_list
     assert all(call.args[0]==60 for call in connection.sock.settimeout.call_args_list)
+
+
+def test_task_analysis_truncation_and_validation_codes():
+    from app.modules.ai_gateway.adapter import OpenAICompatibleAdapter
+    from app.modules.task_recommendation.service import Features
+
+    truncated={'choices':[{'finish_reason':'length','message':{'content':'{"keyword":"半'}}]}
+    with pytest.raises(s.AIError) as exc:
+        OpenAICompatibleAdapter(lambda *a:truncated).generate('url','key','model',[],Features)
+    assert exc.value.code=='output_truncated'
+
+    malformed={'choices':[{'finish_reason':'stop','message':{'content':'{"keyword":'}}]}
+    with pytest.raises(s.AIError) as exc:
+        OpenAICompatibleAdapter(lambda *a:malformed).generate('url','key','model',[],Features)
+    assert exc.value.code=='invalid_json'
+
+    wrong={'choices':[{'finish_reason':'stop','message':{'content':'{"keyword":"x"}'}}]}
+    with pytest.raises(s.AIError) as exc:
+        OpenAICompatibleAdapter(lambda *a:wrong).generate('url','key','model',[],Features)
+    assert exc.value.code=='invalid_schema'

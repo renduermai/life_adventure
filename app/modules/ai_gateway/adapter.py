@@ -18,6 +18,8 @@ class OpenAICompatibleAdapter:
         try:
             raw=self.transport(url,key,payload)
             stage='extract'
+            if raw['choices'][0].get('finish_reason')=='length':
+                raise AIError('output_truncated','模型输出达到长度限制，任务尚未完成分析',502)
             content=raw['choices'][0]['message']['content']
             if not isinstance(content,str) or len(content)>32000:
                 raise ValueError()
@@ -48,4 +50,5 @@ class OpenAICompatibleAdapter:
                         safe_loc=[part if isinstance(part,int) or part in {'reply','steps','title','detail','minutes','done_when','minimum_index','state_advice','ready','pressure','energy','difficulty','barrier','goal'} else '<extra>' for part in item['loc']]
                         errors.append({'loc':safe_loc,'type':item['type'],'actual_type':type(node).__name__ if node is not None else 'missing_or_null'})
                 logging.getLogger('adventure_camp').error('ai_parse_diagnostic stage=%s exception=%s root_type=%s root_keys=%s choice_type=%s finish_reason=%s message_keys=%s content_type=%s content_len=%s errors=%s',stage,type(exc).__name__,type(raw).__name__,sorted(raw.keys()) if isinstance(raw,dict) else None,type(choice).__name__,choice.get('finish_reason') if isinstance(choice,dict) else None,sorted(msg.keys()) if isinstance(msg,dict) else None,type(content).__name__,len(content) if isinstance(content,str) else None,errors)
-            raise AIError('invalid_output','模型输出不符合要求，结果未保存到正式业务',502) from None
+            code='invalid_json' if isinstance(exc,ValidationError) and any(e['type']=='json_invalid' for e in exc.errors(include_input=False,include_url=False)) else 'invalid_schema' if isinstance(exc,ValidationError) else 'invalid_output'
+            raise AIError(code,'模型输出不符合要求，结果未保存到正式业务',502) from None
