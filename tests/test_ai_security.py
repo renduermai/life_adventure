@@ -79,3 +79,15 @@ def test_adapter_validates_structure_and_retains_only_usage():
     assert len(captured[0]['messages'])==4
     with pytest.raises(s.AIError,match='不符合'):
         OpenAICompatibleAdapter(lambda *a:{'choices':[{'message':{'content':'{"wrong":1}'}}]}).generate('url','key','model',[],Output)
+
+
+def test_generation_wait_uses_remaining_total_budget(monkeypatch):
+    monkeypatch.setattr(s,'resolve',lambda host:['8.8.8.8'])
+    monkeypatch.setattr(s.time,'monotonic',lambda:100.0)
+    connection=Mock();connection.getresponse.return_value.status=200
+    connection.getresponse.return_value.read1.side_effect=[b'{}',b'']
+    factory=Mock(return_value=connection);monkeypatch.setattr(s,'PinnedHTTPS',factory)
+    assert s.post_json('https://example.com/v1','test-key',{})=={}
+    factory.assert_called_once_with('example.com','8.8.8.8',timeout=10)
+    assert connection.sock.settimeout.call_args_list
+    assert all(call.args[0]==60 for call in connection.sock.settimeout.call_args_list)

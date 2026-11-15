@@ -68,3 +68,17 @@ def quest_progress(db: Session, user_id: UUID, quest_id: UUID, milestones: list[
     if total:
         return {"progress": round(completed * 100 / total), "progress_label": f"已完成末级任务 {completed} / {total}"}
     return {"progress": progress([m for m in milestones if m.deleted_at is None]), "progress_label": "已完成里程碑 / 未删除里程碑"}
+
+
+def create_milestone(db, user_id, quest_id, title, description='', due=''):
+    """Shared milestone creation, in the caller's transaction and user lock."""
+    from app.modules.quests.models import QuestEvent
+    quest = get_quest(db, user_id, quest_id)
+    if not quest:
+        raise ValueError('主线不存在或已删除')
+    item = Milestone(user_id=user_id, main_quest_id=quest_id, status='pending', sort_order=0)
+    set_milestone_fields(item, title, description, due)
+    db.add(item)
+    db.flush()
+    db.add(QuestEvent(user_id=user_id, main_quest_id=quest_id, action='添加里程碑', detail=item.title[:200]))
+    return item

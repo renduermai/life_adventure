@@ -1,6 +1,10 @@
 (() => {
   const widgets = [...document.querySelectorAll('[data-recommendation-key]')];
   if (!widgets.length) return;
+  for (const widget of widgets) {
+    const link=widget.querySelector('a');
+    if(link)link.addEventListener('click',()=>{const url=new URL(link.href);url.searchParams.set('generate',crypto.randomUUID());link.href=url;});
+  }
   const labels = {green:'绿色 · 当前推荐', white:'白色 · 一般', yellow:'黄色 · 不太推荐', red:'红色 · 很不推荐'};
   let loading = false;
   function paint(widget, item, batch) {

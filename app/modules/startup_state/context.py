@@ -1,4 +1,4 @@
-"""Read-only, owner-scoped context for the breakdown navigation placeholder."""
+"""Read-only, owner-scoped target context for breakdown navigation."""
 from sqlalchemy import select
 from app.modules.quests.models import MainQuest, Milestone
 from app.modules.quests.service import get_quest, quest_progress

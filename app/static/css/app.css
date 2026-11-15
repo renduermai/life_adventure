@@ -33,3 +33,12 @@
 
 .startup-layout [hidden] { display: none !important; }
 .state-chat select { padding: 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg); color: var(--text); font: inherit; font-size: 12px; margin-block: 6px 12px; }
+
+.breakdown-step { margin: 14px 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.breakdown-step label { display: block; font-size: 12px; margin-block: 8px; }
+.breakdown-step input:not([type=checkbox]):not([type=radio]), .breakdown-step textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: 7px; font: inherit; }
+.breakdown-step textarea { min-height: 60px; resize: vertical; }
+.breakdown-step input[type=checkbox], .breakdown-step input[type=radio], #breakdown-duplicates { width: auto; margin-right: 8px; }
+#breakdown-reply, #breakdown-state { white-space: pre-wrap; }
+
+.state-chat .breakdown-minimum { padding: 12px; border-left: 3px solid var(--accent); background: var(--hover); color: var(--text); font-weight: 600; }

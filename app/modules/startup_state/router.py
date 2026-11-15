@@ -22,6 +22,7 @@ class StateInput(BaseModel):
     request_id: UUID
     expected_generation: StrictInt = Field(ge=0)
     source_turn_id: UUID | None = None
+    source_plan_id: UUID | None = None
 
 def locate(p, e):
     return ("投入区" if p < 50 else "降噪区") if e >= 50 else ("激活区" if p < 50 else "修复区")
@@ -31,7 +32,7 @@ def owner(db, request):
     return user.id if user else None
 
 def result(snapshot, generation):
-    return {"snapshot_id":str(snapshot.id), "source_turn_id":str(snapshot.source_turn_id) if snapshot.source_turn_id else None, "pressure":snapshot.pressure, "energy":snapshot.energy, "difficulty":snapshot.difficulty, "quadrant":locate(snapshot.pressure,snapshot.energy), "generation":generation, "created_at":snapshot.created_at.isoformat()}
+    return {"snapshot_id":str(snapshot.id), "source_plan_id":str(snapshot.source_plan_id) if snapshot.source_plan_id else None, "source_turn_id":str(snapshot.source_turn_id) if snapshot.source_turn_id else None, "pressure":snapshot.pressure, "energy":snapshot.energy, "difficulty":snapshot.difficulty, "quadrant":locate(snapshot.pressure,snapshot.energy), "generation":generation, "created_at":snapshot.created_at.isoformat()}
 
 @router.get('/history')
 def history(request: Request, offset: int = Query(default=0, ge=0)):
@@ -56,7 +57,7 @@ async def save(request: Request):
     same_origin(request)
     try:
         data=await body(request,StateInput)
-        if not data.confirmed: raise ValueError()
+        if not data.confirmed or (data.source_turn_id and data.source_plan_id): raise ValueError()
     except AIError as exc: return error_response(request,exc)
     except (ValidationError,ValueError): return JSONResponse({"error":"请确认有效的压力和能量数值"},422)
     def execute():
@@ -66,6 +67,7 @@ async def save(request: Request):
             lock_user(db,user_id)
             values=[data.pressure,data.energy,data.difficulty,data.expected_generation]
             if data.source_turn_id: values.append(str(data.source_turn_id))
+            if data.source_plan_id: values.append("plan:"+str(data.source_plan_id))
             fingerprint=hashlib.sha256(json.dumps(values,ensure_ascii=False).encode()).hexdigest()
             old=db.scalar(select(StateSnapshot).where(StateSnapshot.user_id==user_id,StateSnapshot.request_id==data.request_id))
             current=db.get(StateCurrent,user_id)
@@ -76,7 +78,14 @@ async def save(request: Request):
             generation=current.generation if current else 0
             if generation!=data.expected_generation: return JSONResponse({"error":"状态已在其他页面更新，请刷新后重试"},409)
             if data.source_turn_id: validate_suggestion(db,user_id,data.source_turn_id,generation)
-            snapshot=StateSnapshot(user_id=user_id,request_id=data.request_id,fingerprint=fingerprint,pressure=data.pressure,energy=data.energy,difficulty=data.difficulty.strip(),source_turn_id=data.source_turn_id)
+            if data.source_plan_id:
+                from app.modules.startup_chat.breakdown_service import get_plan, context, target, fresh
+                plan=get_plan(db,user_id,data.source_plan_id)
+                ctx,fp=context(db,user_id,*target(plan))
+                if plan.status!='draft' or not fresh(plan,ctx,fp) or not (plan.advice or {}).get('state_advice',{}):
+                    raise AIError('stale_suggestion','拆解状态建议已失效，请重新拆解或手动确认',409)
+                if not plan.advice['state_advice']['ready']:raise AIError('invalid_suggestion','状态信息不足，请先继续对话',409)
+            snapshot=StateSnapshot(user_id=user_id,request_id=data.request_id,fingerprint=fingerprint,pressure=data.pressure,energy=data.energy,difficulty=data.difficulty.strip(),source_turn_id=data.source_turn_id,source_plan_id=data.source_plan_id)
             db.add(snapshot); db.flush()
             if current: current.snapshot_id=snapshot.id; current.generation+=1
             else: current=StateCurrent(user_id=user_id,snapshot_id=snapshot.id,generation=1); db.add(current)

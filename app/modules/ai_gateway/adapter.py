@@ -7,8 +7,8 @@ class OpenAICompatibleAdapter:
     def __init__(self, transport):
         self.transport=transport
 
-    def generate(self,url,key,model,messages,output_schema=None):
-        payload={'model':model,'messages':messages,'max_tokens':512}
+    def generate(self,url,key,model,messages,output_schema=None,max_tokens=512):
+        payload={'model':model,'messages':messages,'max_tokens':max_tokens}
         if output_schema:
             payload['messages']=[{'role':'system','content':'Return only a JSON object matching this schema: '+json.dumps(output_schema.model_json_schema())}]+messages
         try:

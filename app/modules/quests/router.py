@@ -11,7 +11,7 @@ from app.core.config import ROOT
 from app.modules.identity.models import LoginSession
 from app.modules.identity.service import current_user, lock_user, login, register, token_hash, update_profile
 from app.modules.quests.models import MainQuest, Milestone, QuestEvent
-from app.modules.quests.service import get_milestone, get_quest, quest_progress, set_milestone_fields, set_quest_fields, soft_delete
+from app.modules.quests.service import create_milestone, get_milestone, get_quest, quest_progress, set_milestone_fields, set_quest_fields, soft_delete
 
 router = APIRouter()
 templates = Jinja2Templates(directory=ROOT / "app/templates")
@@ -151,14 +151,13 @@ async def quest_action(request: Request, quest_id: UUID, action: str):
             elif action == "restore":
                 quest.deleted_at = None
             elif action == "milestones":
-                item = Milestone(user_id=user.id, main_quest_id=quest.id, status="pending", sort_order=0)
-                set_milestone_fields(item, str(form.get("title", "")), str(form.get("description", "")), str(form.get("due_date", "")))
-                db.add(item)
+                create_milestone(db, user.id, quest.id, str(form.get("title", "")), str(form.get("description", "")), str(form.get("due_date", "")))
             else:
                 raise HTTPException(404)
             labels = {"edit": "修改主线", "status": "更新主线状态", "delete": "删除主线", "restore": "恢复主线", "milestones": "添加里程碑"}
             details = {"status": quest.status, "milestones": str(form.get("title", ""))}
-            record_event(db, quest, labels[action], details.get(action, ""))
+            if action != "milestones":
+                record_event(db, quest, labels[action], details.get(action, ""))
         except ValueError as error:
             milestones = db.scalars(select(Milestone).where(Milestone.user_id == user.id, Milestone.main_quest_id == quest_id)).all()
             return render(request, "detail", user=user, quest=quest, milestones=milestones, **quest_progress(db, user.id, quest_id, milestones), error=str(error))

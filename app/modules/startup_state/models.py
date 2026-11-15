@@ -6,7 +6,7 @@ from app.core.database import Base
 
 class StateSnapshot(Base):
     __tablename__ = "startup_state_snapshots"
-    __table_args__ = (UniqueConstraint("id", "user_id", name="uq_state_owner"), UniqueConstraint("user_id", "request_id", name="uq_state_request"), CheckConstraint("pressure BETWEEN 0 AND 100 AND energy BETWEEN 0 AND 100", name="ck_state_values"), ForeignKeyConstraint(['source_turn_id', 'user_id'], ['startup_chat_turns.id', 'startup_chat_turns.user_id'], name='fk_state_chat_owner'))
+    __table_args__ = (UniqueConstraint("id", "user_id", name="uq_state_owner"), UniqueConstraint("user_id", "request_id", name="uq_state_request"), CheckConstraint("pressure BETWEEN 0 AND 100 AND energy BETWEEN 0 AND 100", name="ck_state_values"), ForeignKeyConstraint(['source_turn_id', 'user_id'], ['startup_chat_turns.id', 'startup_chat_turns.user_id'], name='fk_state_chat_owner'), ForeignKeyConstraint(['source_plan_id', 'user_id'], ['breakdown_plans.id', 'breakdown_plans.user_id'], name='fk_state_breakdown_owner', use_alter=True))
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     request_id: Mapped[UUID] = mapped_column()
@@ -15,6 +15,7 @@ class StateSnapshot(Base):
     energy: Mapped[int] = mapped_column(Integer)
     difficulty: Mapped[str] = mapped_column(String(2000), default="")
     source_turn_id: Mapped[UUID | None] = mapped_column(nullable=True)
+    source_plan_id: Mapped[UUID | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 class StateCurrent(Base):

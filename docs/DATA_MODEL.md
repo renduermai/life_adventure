@@ -1,5 +1,11 @@
 # 数据模型草案
 
+## V2 第 8 步（2026-11-15）
+
+0012_breakdown 增加 breakdown_plans：同用户目标复合外键、snapshot_id、previous_id、请求/上下文指纹、草稿与revision、模型来源、确认指纹/时间、正式对象mapping、执行关联、清单状态/版本/事件JSON。生命周期 generating/draft/confirmed/failed/superseded；步骤UUID由服务器生成，历史方案保留。
+
+状态快照增加可空 source_plan_id 同用户外键，用于用户确认拆解对话中的状态建议。与计划snapshot_id构成双向引用；迁移先建计划再加来源外键，回退先拆来源。清理时需遵守外键顺序；正式应用不硬删除方案。开发库在线upgrade和ORM check已通过。V2数据导出仍留第9步明确。
+
 ## V2 第 7 步（2026-11-15）
 
 0011_startup_chat 新增 startup_conversations（用户、标题、版本）与 startup_chat_turns（用户、会话、顺序、请求号、指纹、输入、结构化回复、pending/succeeded/failed、错误码、基础状态代次、时间）。同用户请求唯一、会话顺序唯一、复合外键约束归属。startup_state_snapshots 增加可空 source_turn_id，复合外键关联同用户轮次；旧手动状态保留空来源。用户确认可以修改建议数值，快照是最终确认值，回复保留原建议。

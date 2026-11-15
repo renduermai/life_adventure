@@ -20,9 +20,9 @@
    const steps = document.querySelector('#breakdown-steps'); steps.replaceChildren();
    for (const title of data.steps) { const li = document.createElement('li'); li.textContent = title; steps.append(li); }
    const back = document.querySelector('#breakdown-return'); back.href = data.href;
-   error.textContent='';document.querySelector('#breakdown-context').hidden = false;
+   error.textContent='';document.querySelector('#breakdown-context').hidden = false;window.dispatchEvent(new CustomEvent('breakdown-target',{detail:data}));
    if(focus){chat.focus(); chat.scrollIntoView({behavior:'smooth'});}
-  } catch(e) { if(currentVersion!==version)return;document.querySelector('#breakdown-context').hidden=true;error.textContent = e.message;if(focus)chat.focus(); }
+  } catch(e) { if(currentVersion!==version)return;document.querySelector('#breakdown-context').hidden=true;error.textContent = e.message;window.dispatchEvent(new Event('breakdown-unavailable'));if(focus)chat.focus(); }
  }
  window.addEventListener('state-saved',()=>load());
  window.addEventListener('recommendations-refreshed',()=>load());

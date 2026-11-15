@@ -142,6 +142,13 @@ def post_json(url, key, payload):
                            body=json.dumps(payload).encode(), headers={
                                'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
                                'Accept': 'application/json', 'Accept-Encoding': 'identity'})
+        # Connecting is bounded by 10s; generation may use the remaining total
+        # deadline. Non-streaming providers often send headers only after generation.
+        remaining = 60 - (time.monotonic() - started)
+        if remaining <= 0:
+            raise TimeoutError()
+        if connection.sock is not None:
+            connection.sock.settimeout(remaining)
         response = connection.getresponse()
         if response.status != 200:
             code = 'upstream_rejected' if response.status != 429 else 'upstream_rate_limit'
@@ -150,6 +157,8 @@ def post_json(url, key, payload):
         while True:
             if time.monotonic() - started >= 60:
                 raise TimeoutError()
+            if connection.sock is not None:
+                connection.sock.settimeout(max(.01, 60 - (time.monotonic() - started)))
             block = response.read1(min(65536, 1048577 - len(chunks)))
             if not block:
                 break
