@@ -11,7 +11,9 @@ from app.modules.tasks.models import Task, TaskEvent
 from app.modules.activity.models import ActivityLog, ActivityEvent, FocusSession, FocusSegment
 from app.modules.growth.models import RewardEntry, RewardSettings
 
-MODELS=(MainQuest,Milestone,QuestEvent,Task,TaskEvent,FocusSession,FocusSegment,ActivityLog,ActivityEvent,RewardSettings,RewardEntry)
+from app.modules.startup_items.models import StartupItem
+
+MODELS=(MainQuest,Milestone,QuestEvent,Task,TaskEvent,FocusSession,FocusSegment,ActivityLog,ActivityEvent,RewardSettings,RewardEntry,StartupItem)
 
 def scalar(value):
     if isinstance(value,(UUID,datetime,date)): return value.isoformat() if hasattr(value,'isoformat') else str(value)

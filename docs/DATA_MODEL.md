@@ -1,5 +1,7 @@
 # 数据模型草案
 
+0016_startup_items仅新增startup_items表与用户索引：id、user_id、description(1–2000)、importance/urgency(0–100整数)、progress(0–2000)、version、创建请求UUID/指纹、创建更新时间及deleted_at。唯一外键指向users，不关联主线、副本、奖励或旧AI推荐。软删除只隐藏记录；未建回收站UI。没有分析字段，第4步另行设计。历史表及数据均保留。
+
 V3第3步没有新迁移，沿用已有状态快照/当前引用存储最新滑杆值，保留历史来源及difficulty，不覆盖或删除历史数据。用户手动调节视为明确状态输入，由前端自动提交confirmed=true；不再要求额外确认按钮。一次停拖形成快照，不在每个input写库。数据库仍0015_manual_focus。
 
 0015_manual_focus仅向main_quests和tasks增加manual_focus_status（五种值，默认normal）与manual_focus_version（默认1），附数据库约束。人工字段与任务status、priority及任务version独立；不迁移旧AI颜色，不删除历史表。导出按模型列读取，包含新增字段。

@@ -22,6 +22,7 @@ def run():
    assert data['expected_generation']==saved['generation']
    saved=dict(data,generation=saved['generation']+1,snapshot_id='00000000-0000-0000-0000-000000000001')
    value=saved
+  elif path=='/api/startup/items':value={'items':[],'next_offset':None}
   elif path=='/api/startup/chat/conversations':value={'items':[],'next_offset':None}
   else:raise AssertionError(path)
   route.fulfill(json=value)

@@ -25,7 +25,7 @@ def run():
         if path=='/api/startup/target':value=ctx
         elif path=='/api/startup/current':value={'generation':0,'state':None}
         elif path=='/api/startup/recommendations':value={'items':[],'message':'尚未评估'}
-        elif path in ['/api/startup/history','/api/startup/chat/conversations']:value={'items':[],'next_offset':None}
+        elif path in ['/api/startup/items','/api/startup/history','/api/startup/chat/conversations']:value={'items':[],'next_offset':None}
         elif path=='/api/startup/breakdowns' and request.method=='GET':value={'items':[plan] if plan else [],'target':ctx,'next_offset':None}
         elif path=='/api/startup/breakdowns' and request.method=='POST':
             data=request.post_data_json

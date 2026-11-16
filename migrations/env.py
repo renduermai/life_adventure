@@ -21,6 +21,8 @@ from app.modules.task_recommendation import models as recommendation_models  # n
 from app.modules.startup_chat import breakdown_models  # noqa: F401
 from app.modules.startup_chat import models as chat_models  # noqa: F401
 
+from app.modules.startup_items import models as item_models  # noqa: F401
+
 config = context.config
 
 
