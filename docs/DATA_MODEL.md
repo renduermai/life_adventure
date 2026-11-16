@@ -1,5 +1,7 @@
 # 数据模型草案
 
+0017_item_analysis仅向startup_items增加可空analysis_result(JSON)、analysis_fingerprint、analysis_config、analysis_error、analysis_attempt_id、analysis_attempt_fingerprint、analysis_attempt_status与analysis_started_at。分析写入不递增事项内容version；缓存指纹只含四项输入，模型配置签名含协议提示版本item-v1。最后成功结果与最近尝试分离保存，失败不覆盖成功JSON。描述/重要/紧急/进展变化即显示过期，滑杆变化不影响缓存。无旧表/历史数据删除，沿用导出按模型列自动包含分析字段。
+
 0016_startup_items仅新增startup_items表与用户索引：id、user_id、description(1–2000)、importance/urgency(0–100整数)、progress(0–2000)、version、创建请求UUID/指纹、创建更新时间及deleted_at。唯一外键指向users，不关联主线、副本、奖励或旧AI推荐。软删除只隐藏记录；未建回收站UI。没有分析字段，第4步另行设计。历史表及数据均保留。
 
 V3第3步没有新迁移，沿用已有状态快照/当前引用存储最新滑杆值，保留历史来源及difficulty，不覆盖或删除历史数据。用户手动调节视为明确状态输入，由前端自动提交confirmed=true；不再要求额外确认按钮。一次停拖形成快照，不在每个input写库。数据库仍0015_manual_focus。

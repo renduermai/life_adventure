@@ -95,7 +95,7 @@ def run():
             page.once('dialog', lambda dialog: dialog.accept())
             page.locator('.startup-item').last.get_by_role('button', name='删除').click()
             expect(page.locator('.startup-item')).to_have_count(2)
-            expect(page.get_by_role('button', name='开始分析')).to_be_disabled()
+            expect(page.get_by_role('button', name='开始分析')).to_be_enabled()
             page.set_viewport_size({'width': 390, 'height': 844})
             page.locator('#item-new').click()
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')

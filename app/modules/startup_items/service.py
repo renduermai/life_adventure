@@ -8,8 +8,9 @@ from app.modules.startup_items.schemas import ItemFields
 
 
 def public(item):
+    from app.modules.startup_items.analysis import public as analysis_public
     return {name: getattr(item, name) for name in (
-        'id', 'description', 'importance', 'urgency', 'progress', 'version', 'created_at', 'updated_at')}
+        'id', 'description', 'importance', 'urgency', 'progress', 'version', 'created_at', 'updated_at')} | {'analysis': analysis_public(item)}
 
 
 def listing(db, uid, offset):

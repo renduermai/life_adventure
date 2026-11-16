@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID, uuid4
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint, func, text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, JSON, String, UniqueConstraint, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -25,3 +25,11 @@ class StartupItem(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    analysis_result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    analysis_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    analysis_config: Mapped[str | None] = mapped_column(String(100))
+    analysis_error: Mapped[str | None] = mapped_column(String(50))
+    analysis_attempt_id: Mapped[UUID | None] = mapped_column()
+    analysis_attempt_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    analysis_attempt_status: Mapped[str | None] = mapped_column(String(20))
+    analysis_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
