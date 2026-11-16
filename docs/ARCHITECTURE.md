@@ -1,5 +1,12 @@
 # 总体架构
 
+## 藏经阁第3、4步
+
+manual_focus公共宏为主线/副本列表及详情提供书架入口，/library?target_type=quest|task&target_id=UUID只传类型及ID。页面读取本人有效targets再预选，错误/越权目标明确提示，不回退为全部。列表查询按main_quest_id或task_id，归属下拉PATCH成功后重读当前筛选，移走的链接消失；筛选保存在URL，刷新保持。
+
+复制按钮位于每条记录左侧，clipboard.writeText成功后才POST /api/library/links/{id}/copies。剪贴板失败不请求计数；复制成功后计数结果未知时保留操作UUID，显示重试计数，不再次复制。后端身份/归属/可用性检查，同事务保存操作凭据和原子click_count+1；重复操作UUID幂等，同UUID用于另一链接409。普通GET、打开和改归属不加次数。计数不改关联version，避免无关版本冲突。排序重新由数据库返回。
+
+
 藏经阁第2步：/library共享导航，独立模板、CSS、JS读取本人targets/links；URL文本只作为HTTP/HTTPS新标签链接渲染，noopener noreferrer，不计数。保存不确定时以同一UUID重试，成功保留选择。主题关联筛选/改挂与复制计数分别留第3/4步。
 
 

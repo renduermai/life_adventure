@@ -1,5 +1,10 @@
 # 数据模型
 
+## 藏经阁0021_library_copies
+
+library_links增加(id,user_id)唯一约束，library_copy_receipts以(user_id,request_id)主键保存link_id及创建时间，复合FK限定同用户链接。只保存复制操作ID，不存剪贴板内容。凭据与原子计数在同一事务，锁用户串行化重试检查，SQL执行click_count=click_count+1。失败不留半次计数。
+
+
 ## 藏经阁：0020_library_links
 
 新增library_links：UUID id/user_id，原始description最多500字符、url最多2048字符；可空main_quest_id/task_id二选一；BigInteger click_count默认0；version默认1；create_request_id和SHA256指纹、UTC时间与deleted_at。描述/URL长度、计数非负/版本正数、恰好一个目标CHECK；复合FK保证主线/副本同用户，用户/请求UUID唯一防重复创建；归属及排序索引。无复制/点击流水表，第4步另行批准实施成功复制计数。

@@ -75,3 +75,19 @@ def mutate(db,uid,link_id,data,delete=False):
         row.main_quest_id,row.task_id=data.main_quest_id,data.task_id
     row.version+=1;db.flush()
     return {'deleted':True,'id':row.id} if delete else public(row,targets(db,uid))
+
+
+def copied(db,uid,link_id,data):
+    from sqlalchemy import update
+    from app.modules.library.models import CopyReceipt
+    lock_user(db,uid)
+    row=get(db,uid,link_id)
+    old=db.get(CopyReceipt,(uid,data.request_id))
+    if old:
+        if old.link_id!=link_id: raise HTTPException(409,'该复制编号已用于其他链接')
+        return public(row,targets(db,uid))
+    validate_target(db,uid,row.main_quest_id,row.task_id)
+    db.execute(update(LibraryLink).where(LibraryLink.id==link_id,LibraryLink.user_id==uid).values(click_count=LibraryLink.click_count+1))
+    db.add(CopyReceipt(user_id=uid,request_id=data.request_id,link_id=link_id))
+    db.flush();db.refresh(row)
+    return public(row,targets(db,uid))

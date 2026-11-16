@@ -89,3 +89,24 @@ def test_validation_ownership_constraints_and_concurrent_retry(notes):
     client.cookies.clear()
     assert client.get(BASE).status_code==401
     assert client.post(BASE,headers=HEADERS,json=payload(main_quest_id=str(q))).status_code==401
+
+
+def test_copy_count_concurrency_idempotence_and_sort(notes):
+    from app.modules.library.schemas import Copy
+    client,sessions,uid,other,q,t,foreign,app=setup(notes)
+    row=client.post(BASE,headers=HEADERS,json=payload(task_id=str(t))).json()
+    otherlink=client.post(BASE,headers=HEADERS,json=payload(main_quest_id=str(q))).json()
+    url=BASE+'/'+row['id']+'/copies';rid=str(uuid4())
+    assert client.get(url).status_code==405
+    assert client.post(url,headers=HEADERS,json={'request_id':rid}).json()['click_count']==1
+    assert client.post(url,headers=HEADERS,json={'request_id':rid}).json()['click_count']==1
+    assert client.post(BASE+'/'+otherlink['id']+'/copies',headers=HEADERS,json={'request_id':rid}).status_code==409
+    def add(_):
+        with sessions.begin() as db:
+            return service.copied(db,uid,UUID(row['id']),Copy(request_id=uuid4()))['click_count']
+    with ThreadPoolExecutor(max_workers=3) as pool: assert sorted(pool.map(add,range(3)))==[2,3,4]
+    assert client.get(BASE).json()['items'][0]['id']==row['id']
+    assert client.get(BASE+'/'+row['id']).json()['version']==1
+    assert client.post(url,json={'request_id':str(uuid4())}).status_code==403
+    client.cookies.set('camp_session',str(other))
+    assert client.post(url,headers=HEADERS,json={'request_id':str(uuid4())}).status_code==404

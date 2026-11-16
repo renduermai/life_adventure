@@ -48,3 +48,8 @@ class Update(Target):
 class Delete(BaseModel):
     model_config = ConfigDict(extra='forbid')
     expected_version: StrictInt = Field(ge=1)
+
+
+class Copy(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    request_id: UUID

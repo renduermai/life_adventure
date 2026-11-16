@@ -66,3 +66,9 @@ async def update(request:Request,link_id:UUID):
 @router.delete('/links/{link_id}')
 async def delete(request:Request,link_id:UUID):
     return await mutation(request,Delete,lambda db,uid,data:service.mutate(db,uid,link_id,data,True))
+
+
+@router.post('/links/{link_id}/copies')
+async def copied(request:Request,link_id:UUID):
+    from app.modules.library.schemas import Copy
+    return await mutation(request,Copy,lambda db,uid,data:service.copied(db,uid,link_id,data))

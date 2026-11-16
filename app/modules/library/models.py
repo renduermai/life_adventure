@@ -14,6 +14,7 @@ class LibraryLink(Base):
         CheckConstraint('click_count >= 0 AND version >= 1', name='ck_library_counters'),
         CheckConstraint('char_length(description) BETWEEN 1 AND 500', name='ck_library_description'),
         CheckConstraint('char_length(url) BETWEEN 1 AND 2048', name='ck_library_url_length'),
+        UniqueConstraint('id','user_id',name='uq_library_id_user'),
         UniqueConstraint('user_id','create_request_id', name='uq_library_create_request'),
         Index('ix_library_owner_sort','user_id','click_count','created_at','id'),
         Index('ix_library_quest','main_quest_id','user_id'),
@@ -32,3 +33,12 @@ class LibraryLink(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class CopyReceipt(Base):
+    __tablename__ = 'library_copy_receipts'
+    __table_args__ = (ForeignKeyConstraint(['link_id','user_id'],['library_links.id','library_links.user_id']),)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    request_id: Mapped[UUID] = mapped_column(primary_key=True)
+    link_id: Mapped[UUID] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),server_default=func.now())

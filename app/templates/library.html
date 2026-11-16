@@ -4,7 +4,8 @@
 <script src="{{ url_for('static', path='js/library.js') }}" defer></script>
 <div class="library-layout"><section class="card library-panel" aria-labelledby="library-heading">
   <div class="library-intro"><p class="eyebrow">YOUR LINK SHELF</p><h2 id="library-heading">把有用的链接收在这里</h2><p class="muted">为每条主线和副本留下随时可以找到的参考资料。</p></div>
-  <div class="library-list-header"><h3>全部链接</h3><span class="muted">按使用次数排列</span></div>
+  <div class="library-list-header"><h3 id="library-current">全部链接</h3><span class="muted">按使用次数排列</span></div>
+  <label for="library-filter">筛选任务</label><select id="library-filter"><option value="">全部链接</option></select>
   <p id="library-message" role="status" aria-live="polite"></p>
   <div id="library-list" aria-label="链接列表"></div><button id="library-more" class="button secondary" type="button" hidden>加载更多</button><button id="library-reload" class="button secondary" type="button" hidden>重新读取</button>
 </section>
