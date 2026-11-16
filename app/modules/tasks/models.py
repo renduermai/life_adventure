@@ -10,6 +10,8 @@ from app.core.database import Base
 class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = (
+        CheckConstraint("manual_focus_status IN ('recommended','normal','not_recommended','deferred','routine_practice')", name='ck_tasks_manual_focus'),
+        CheckConstraint('manual_focus_version >= 1', name='ck_tasks_manual_focus_version'),
         UniqueConstraint("id", "user_id", name="uq_task_id_user"),
         ForeignKeyConstraint(["main_quest_id", "user_id"], ["main_quests.id", "main_quests.user_id"], name="fk_task_quest_owner"),
         ForeignKeyConstraint(["milestone_id", "main_quest_id", "user_id"], ["milestones.id", "milestones.main_quest_id", "milestones.user_id"], name="fk_task_milestone_owner"),
@@ -24,6 +26,8 @@ class Task(Base):
         CheckConstraint("completion_round >= 0 AND version >= 1", name="ck_task_counters"),
         CheckConstraint("(status = 'completed') = (completed_at IS NOT NULL)", name="ck_task_completed_at"),
     )
+    manual_focus_status: Mapped[str] = mapped_column(String(24), nullable=False, default='normal', server_default='normal')
+    manual_focus_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text('1'))
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     main_quest_id: Mapped[UUID | None] = mapped_column(index=True)

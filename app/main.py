@@ -58,6 +58,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(data_router)
     from app.modules.ai_gateway.router import router as ai_router
     app.include_router(ai_router)
+    from app.modules.manual_focus import router as manual_focus_router
+    app.include_router(manual_focus_router)
     from app.modules.startup_state.router import router as startup_router
     app.include_router(startup_router)
     from app.modules.task_recommendation.router import router as recommendation_router

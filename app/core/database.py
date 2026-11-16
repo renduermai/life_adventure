@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import Settings, postgres_url
 
-EXPECTED_REVISION = "0014_chat_target"
+EXPECTED_REVISION = "0015_manual_focus"
 logger = logging.getLogger("adventure_camp")
 
 

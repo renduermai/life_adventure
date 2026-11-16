@@ -1,0 +1,8 @@
+{% macro manual_focus(kind, item) %}
+<div class="manual-focus" data-kind="{{ kind }}" data-id="{{ item.id }}" data-version="{{ item.manual_focus_version }}">
+<label>人工标记 <select aria-label="{{ item.title }}的五色状态" data-focus-select data-saved="{{ item.manual_focus_status }}" {% if item.deleted_at %}disabled{% endif %}>
+{% for value,label in [('recommended','推荐'),('normal','一般'),('not_recommended','不太推荐'),('deferred','先不考虑'),('routine_practice','常规多练习')] %}<option value="{{ value }}" {% if item.manual_focus_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select></label><span class="focus-dot focus-{{ item.manual_focus_status }}" aria-hidden="true"></span><span data-focus-message role="status"></span>
+{% if not item.deleted_at %}<a class="button secondary" data-breakdown-link href="/startup?task_type={{ kind }}&amp;task_id={{ item.id }}#chat">拆解</a>{% endif %}
+</div>
+{% endmacro %}

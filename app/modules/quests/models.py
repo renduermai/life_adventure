@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import text, CheckConstraint, Date, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -10,10 +10,14 @@ from app.core.database import Base
 class MainQuest(Base):
     __tablename__ = "main_quests"
     __table_args__ = (
+        CheckConstraint("manual_focus_status IN ('recommended','normal','not_recommended','deferred','routine_practice')", name='ck_quests_manual_focus'),
+        CheckConstraint('manual_focus_version >= 1', name='ck_quests_manual_focus_version'),
         UniqueConstraint("id", "user_id", name="uq_quest_id_user"),
         CheckConstraint("status IN ('active','paused','completed','archived')", name="ck_quest_status"),
         CheckConstraint("due_date IS NULL OR start_date IS NULL OR due_date >= start_date", name="ck_quest_dates"),
     )
+    manual_focus_status: Mapped[str] = mapped_column(String(24), nullable=False, default='normal', server_default='normal')
+    manual_focus_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text('1'))
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(160), nullable=False)

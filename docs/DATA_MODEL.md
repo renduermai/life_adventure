@@ -1,5 +1,8 @@
 # 数据模型草案
 
+0015_manual_focus仅向main_quests和tasks增加manual_focus_status（五种值，默认normal）与manual_focus_version（默认1），附数据库约束。人工字段与任务status、priority及任务version独立；不迁移旧AI颜色，不删除历史表。导出按模型列读取，包含新增字段。
+
+
 第三次改进的 `0014_chat_target` 在 `startup_conversations` 新增可空 `selected_target_key`（`quest:UUID` 或 `task:UUID`）。这是对话当前关注目标，不复制任务正文或推荐数据；发送/修改选择时均按当前用户有效候选校验，目标失效后不能继续作为有效上下文。已确认压力、能量仍只存于 `startup_state_snapshots`，AI 建议仍在 `startup_chat_turns.response`，正式任务数据未增加字段。
 
 启动状态散点第2次不新增表或迁移。推荐 GET 在现有批次结果上临时补充当前用户有效任务的 `kind`、`title`、`description`、`main_quest` 和 `href`；这些不是新的持久化字段。仅 `analysis_status=analyzed` 且批次非过期的分类可显示标记；`quadrants[0]` 是主要展示象限，并无任务精确压力/能量坐标。
