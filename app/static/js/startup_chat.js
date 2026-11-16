@@ -11,6 +11,7 @@
  function element(tag,text,cls){const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;return el;}
  function controls(){form.querySelectorAll('button,textarea').forEach(x=>x.disabled=busy);select.disabled=busy;newButton.disabled=busy;more.disabled=busy;moreChats.disabled=busy;clearButton.disabled=busy;breakdownButton.disabled=busy;}
  function renderState(){
+  if(!stateBox)return;
   const state=window.startupState;
   stateBox.textContent=state?.confirmed?`${state.quadrant} · 压力 ${state.pressure} · 能量 ${state.energy}${state.difficulty?' · '+state.difficulty:''}`:'当前数值尚未确认。先在左侧调整并保存状态，再刷新推荐。';
  }
@@ -30,7 +31,7 @@
   if(key){const [kind,id]=key.split(':');url.searchParams.set('coach_type',kind);url.searchParams.set('coach_id',id);}
   window.history.replaceState(null,'',url);
   clearButton.hidden=!key;breakdownButton.hidden=!key;
-  if(!key)selectedBox.textContent='尚未选择任务。可在推荐列表中选择讨论。';
+  if(!key)selectedBox.textContent='尚未选择任务。可从主线或副本页面进入拆解。';
   else if(item)renderSelected(item);
   else{
    selectedBox.textContent='正在读取任务……';
@@ -46,7 +47,7 @@
    const answer=turn.response;box.append(element('p','AI：'+answer.reply,'chat-answer'));
    if(answer.barrier)box.append(element('p','可能的阻力：'+answer.barrier,'muted'));
    if(answer.goal)box.append(element('p','你想达成：'+answer.goal,'muted'));
-   if(answer.ready){
+   if(answer.ready&&document.querySelector('#state-form')){
     const quadrant=answer.energy>=50?(answer.pressure<50?'投入区':'降噪区'):(answer.pressure<50?'激活区':'修复区');
     box.append(element('p',`建议值 · ${quadrant} · 压力 ${answer.pressure} / 能量 ${answer.energy}。${answer.difficulty}`));
     const confirmed=window.startupState;
@@ -99,14 +100,14 @@
  setInterval(()=>{if(!document.hidden)refreshHistory().catch(()=>{});},15000);
  let stateOffset=null,stateRead=0;
  const history=document.querySelector('#state-history'),historyMore=document.querySelector('#state-history-more');
- async function states(append=false){const seq=++stateRead;try{const data=await api('/api/startup/history?offset='+(append?stateOffset||0:0));if(seq!==stateRead)return;if(!append)history.replaceChildren();for(const item of data.items)history.append(element('p',`${new Date(item.created_at).toLocaleString()} · ${item.quadrant} · 压力 ${item.pressure} / 能量 ${item.energy} · ${(item.source_turn_id||item.source_plan_id)?'AI 建议经你确认':'手动确认'}${item.difficulty?' · '+item.difficulty:''}`));if(!data.items.length&&!append)history.append(element('p','还没有状态记录。'));stateOffset=data.next_offset;historyMore.hidden=stateOffset===null;}catch(e){if(seq===stateRead&&!append)history.textContent=e.message;}}
- historyMore.addEventListener('click',()=>states(true));window.addEventListener('state-saved',()=>{states();refreshHistory().catch(()=>{});});
+ async function states(append=false){if(!history)return;const seq=++stateRead;try{const data=await api('/api/startup/history?offset='+(append?stateOffset||0:0));if(seq!==stateRead)return;if(!append)history.replaceChildren();for(const item of data.items)history.append(element('p',`${new Date(item.created_at).toLocaleString()} · ${item.quadrant} · 压力 ${item.pressure} / 能量 ${item.energy} · ${(item.source_turn_id||item.source_plan_id)?'AI 建议经你确认':'手动确认'}${item.difficulty?' · '+item.difficulty:''}`));if(!data.items.length&&!append)history.append(element('p','还没有状态记录。'));stateOffset=data.next_offset;historyMore.hidden=stateOffset===null;}catch(e){if(seq===stateRead&&!append)history.textContent=e.message;}}
+ historyMore?.addEventListener('click',()=>states(true));window.addEventListener('state-saved',()=>{states();refreshHistory().catch(()=>{});});
  window.addEventListener('state-readiness',renderState);renderState();
  window.addEventListener('coach-select-task',event=>{if(busy){status.textContent='请等当前对话结束后选择任务。';return;}chooseTask(event.detail.key,event.detail,true);document.querySelector('#chat').scrollIntoView({behavior:'smooth',block:'start'});});
  clearButton.addEventListener('click',()=>chooseTask(null,null,true));
  breakdownButton.addEventListener('click',()=>{if(!selectedKey)return;const [kind,id]=selectedKey.split(':');location.assign('/startup?'+new URLSearchParams({task_type:kind,task_id:id,generate:crypto.randomUUID()}));});
  window.addEventListener('recommendations-view',event=>{
-  const target=document.querySelector('#chat-top-tasks'),data=event.detail;target.replaceChildren();target.dataset.batchId=data.batch_id||'';recommendationItems=data.items||[];
+  const target=document.querySelector('#chat-top-tasks'),data=event.detail;if(!target)return;target.replaceChildren();target.dataset.batchId=data.batch_id||'';recommendationItems=data.items||[];
   const current=recommendationItems.find(x=>x.key===selectedKey);if(current)renderSelected(current);
   const selected=(data.items||[]).filter(x=>!x.stale&&x.level==='green').slice(0,3);
   if(!selected.length){target.append(element('p',data.items?.length?'当前没有绿色推荐。可以休息、调整状态，或自主选择其他任务。':data.message||'确认状态并刷新象限后，这里将显示建议。'));return;}

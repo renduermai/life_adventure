@@ -1,5 +1,7 @@
 # 总体架构
 
+V3第3步复用GET /api/startup/current和POST /api/startup/states；滑杆input只预览，450ms停拖或change后串行保存。以请求UUID支持未知网络结果重试，代次检查阻止旧请求覆盖更新；409后读取代次并保留本地输入待用户重试。新版页面不加载recommendations.js，不请求推荐批次或绘主副本散点。聊天去掉数值建议载入按钮，仍用原有Service；第5步再统一会话。
+
 V3 第1步通过独立manual_focus模块提供PATCH /api/quests/{id}/manual-focus和/api/tasks/{id}/manual-focus。用户锁、归属检查及独立标记版本防止并发覆盖。四个主副本页面不加载旧推荐脚本，拆解入口保留。现有启动状态旧链路留待后续迁移。
 
 

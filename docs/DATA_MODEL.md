@@ -1,5 +1,7 @@
 # 数据模型草案
 
+V3第3步没有新迁移，沿用已有状态快照/当前引用存储最新滑杆值，保留历史来源及difficulty，不覆盖或删除历史数据。用户手动调节视为明确状态输入，由前端自动提交confirmed=true；不再要求额外确认按钮。一次停拖形成快照，不在每个input写库。数据库仍0015_manual_focus。
+
 0015_manual_focus仅向main_quests和tasks增加manual_focus_status（五种值，默认normal）与manual_focus_version（默认1），附数据库约束。人工字段与任务status、priority及任务version独立；不迁移旧AI颜色，不删除历史表。导出按模型列读取，包含新增字段。
 
 

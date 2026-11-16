@@ -32,9 +32,10 @@ def test_message_limits(message):
         MessageInput(request_id=uuid4(), expected_version=0, message=message)
 
 
-def test_startup_ui_keeps_sliders_and_explicit_confirmation(client):
+def test_startup_ui_keeps_sliders_and_autosave(client):
     response=client.get('/startup')
     assert response.status_code==200
-    for marker in ['id="pressure"', 'id="energy"', 'id="chat-form"', 'id="state-form"', 'id="state-history"', 'id="chat-top-tasks"']:
+    for marker in ['id="pressure"', 'id="energy"', 'id="chat-form"', 'id="state-retry"']:
         assert marker in response.text
-    assert 'id="recommend-refresh" type="button" class="button primary" disabled' in response.text
+    assert 'js/recommendations.js' not in response.text
+    assert 'id="state-form"' not in response.text
