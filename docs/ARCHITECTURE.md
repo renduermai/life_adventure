@@ -1,5 +1,8 @@
 # 总体架构
 
+杂念第2步：`/distractions` 使用共享导航和独立模板、JS/CSS；以已登录用户时区展示时间，接口失败保留输入，相同不确定请求复用UUID，输出均使用textContent。主题分类按钮禁用；原文详情侧栏独立滚动，窄屏纵向排列。
+
+
 ## 杂念 V1：独立原文服务
 
 `distractions`仅关联身份模块，复用认证、同源JSON检查、事务及错误响应。POST/GET `/api/distractions/notes`、GET/DELETE `/{note_id}`。原文不可编辑，保留空格换行；请求UUID+SHA256防止重复保存，用户行锁串行化新增与删除。列表按created_at/id倒序，每页20条，next_offset用于继续读取。删除校验expected_version并软删除。不使用浏览器存储持久化，不调用AI，不注册页面或导航。
