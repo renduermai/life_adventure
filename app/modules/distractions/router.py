@@ -49,3 +49,25 @@ async def create(request: Request):
 @router.delete('/{note_id}')
 async def delete(request: Request, note_id: UUID):
     return await mutation(request, Delete, lambda db, uid, data: service.delete(db, uid, note_id, data))
+
+
+@router.post('/classifications')
+async def classify_notes(request: Request):
+    from app.modules.distractions.classification_service import ClassifyInput, classify
+    try:
+        data = await body(request, ClassifyInput)
+        uid = await run_in_threadpool(user_id, request)
+        return await run_in_threadpool(classify, request.app.state.database, request.app.state.settings, uid, data.request_id)
+    except AIError as exc:
+        return error_response(request, exc)
+
+
+@router.get('/classification/current')
+def classification_current(request: Request):
+    from app.modules.distractions.classification_service import view
+    try:
+        uid = user_id(request)
+        with request.app.state.database.transaction() as db:
+            return view(db, uid)
+    except AIError as exc:
+        return error_response(request, exc)

@@ -1,5 +1,12 @@
 # 总体架构
 
+## 杂念第3步：分类版本发布
+
+`POST /api/distractions/notes/classifications` 接收request_id；`GET /api/distractions/notes/classification/current`读取保存的分类、数据库次数、待归类/明确未归类ID、最近尝试状态与错误码。只在显式POST调用模型。distraction_classification用途复用Gateway配置/绑定/安全出站与Pydantic校验，单次输出4096 tokens、90秒，无自动重试。原文集合、模型配置版本与thoughts-v2提示词组成缓存指纹。事务外调用，发布前锁用户并复核有效原文/配置/运行状态；全量ID去重且完全覆盖才原子发布，旧版标记superseded保留。失败独立记录错误码，不清除旧版。
+
+大批数据按约16000字符/20条分批，候选主题生成临时UUID，再统一语义合并、展开回原始ID并校验。不超过12次调用；超过11个原文批次或候选主题超过合并窗口明确classification_limit，不截断输入，不发布部分批次。这个同步预算有意限制超大记录集，后续按真实规模再调整。主题次数与最近日期只查询未删除原文，空主题不返回；needs_reclassification标记新增或删除导致的快照变化。页面按钮第4步才接通。
+
+
 杂念第2步：`/distractions` 使用共享导航和独立模板、JS/CSS；以已登录用户时区展示时间，接口失败保留输入，相同不确定请求复用UUID，输出均使用textContent。主题分类按钮禁用；原文详情侧栏独立滚动，窄屏纵向排列。
 
 

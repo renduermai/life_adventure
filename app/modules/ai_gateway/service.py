@@ -11,7 +11,7 @@ from app.modules.ai_gateway.models import AIConfig, AIModuleBinding, AICallLog
 from app.modules.ai_gateway.adapter import OpenAICompatibleAdapter
 from app.modules.ai_gateway.security import AIError, cipher, decrypt, encrypt, key_version, post_json
 
-PURPOSES = {'connection_test', 'startup_state', 'task_analysis', 'breakdown', 'quest_generation', 'review', 'character'}
+PURPOSES = {'distraction_classification', 'connection_test', 'startup_state', 'task_analysis', 'breakdown', 'quest_generation', 'review', 'character'}
 MODULES = PURPOSES - {'connection_test'}
 
 
@@ -188,7 +188,7 @@ class AIService:
         error=None; content=None; usage=None
         try:
             transport=post_json if timeout_seconds==60 else lambda *args:post_json(*args,timeout_seconds=timeout_seconds)
-            content,usage=OpenAICompatibleAdapter(transport).generate(url,key,model,messages,output_schema,max_tokens=1536 if purpose in {'breakdown','task_analysis','startup_state'} else 512,json_mode=json_mode)
+            content,usage=OpenAICompatibleAdapter(transport).generate(url,key,model,messages,output_schema,max_tokens=4096 if purpose == 'distraction_classification' else 1536 if purpose in {'breakdown','task_analysis','startup_state'} else 512,json_mode=json_mode)
         except AIError as exc:
             error=exc
         except Exception:

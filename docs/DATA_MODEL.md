@@ -1,5 +1,10 @@
 # 数据模型
 
+## 杂念第3步数据库版本0019_distraction_classification
+
+新增distraction_classification_runs（用户/请求唯一、输入指纹、状态、脱敏错误码及时间）、distraction_topics（版本归属、类别/具体主题摘要）、distraction_memberships（run_id/note_id唯一、nullable topic_id表示明确未归类）。复合外键约束同一用户和批次的主题、原文归属。主题次数不存模型猜测值，SQL聚合未删除记录；新原文不在旧版membership中，显示为待归类。只有成功完整批次published，旧版superseded保留，失败版本failed。无原文内容回写或其他业务表关联。回退保留新表及历史版本，不能通过真实库降级删表恢复。
+
+
 ## 杂念 V1 第1步
 
 新增迁移`0018_distraction_notes`，仅增加`distraction_notes`：UUID id/user_id/create_request_id，TEXT content，version，create_fingerprint，UTC created_at/updated_at/deleted_at。只外键关联users；(user_id,create_request_id)及(id,user_id)唯一，(user_id,created_at,id)索引，长度1–5000及version>=1约束。应用另拒绝空白和NUL，不修剪原文。不含分类/主题表。

@@ -1,5 +1,16 @@
 # 验收与测试记录
 
+## 杂念第3步：语义归类后端完成（2026-11-16）
+
+新增分类批次/主题/成员三表与0019_distraction_classification迁移，已在线执行，Alembic check无差异，数据库readiness为True。独立分类服务复用Gateway并增加distraction_classification用途，输出4096 tokens/90秒预算。分类结果完整ID分区校验后原子发布；失败留旧版，计数SQL统计未删除原文；不写原文或其他任务数据。缓存以有效原文、模型配置版本、thoughts-v2提示版本为键。新原文待归类、无法判断明确未归类，内容变化needs_reclassification。支持有预算的分批分析及主题合并，超预算明确失败且不丢旧结果。页面归类按钮保持禁用，第4步接线未授权。
+
+验证：默认pytest 118 passed、49 skipped、1 warning（既有Starlette/httpx弃用），编译及diff检查通过。显式将开发库迁移连接仅在测试进程映射到TEST_DATABASE_URL，用随机schema运行真实PostgreSQL测试，结束清理。首次组合测试3 passed/164.38秒（含格式成功但语义过度拆分的真实模型初测，不能据此宣称语义通过）；独立批处理/快照/未归类测试1 passed/127.61秒；升级thoughts-v2后真实Kimi语义断言复测1 passed/108.92秒。真实合成样例最终归为[2,1]，明确验证第二次请求cached=True。首次[1,1,1]问题与修正记录保留，不隐瞒。
+
+数据库可控Mock测试覆盖缓存（同输入仅一次生成）、软删除次数、跨用户读取、超时保旧、伪造ID拒绝、GET回读；21条记录分批合并仅三次模拟调用、分析中新增导致stale且旧版保留、全未归类。单测覆盖重复/遗漏/伪造ID与Schema缺失字段。本轮不声称测试过所有上游错误或所有数据库故障，Mock不替代真实模型验证。真实测试仅发送合成杂念，未发送真实用户内容，未打印密钥/原文。临时用户与配置位于清理的测试schema，实际业务库只加表迁移。
+
+接口验收：登录后同源POST `/api/distractions/notes/classifications`，JSON request_id为新UUID；GET `/api/distractions/notes/classification/current`，查看run_id、groups/category/summary/count、pending_note_ids、unclassified_note_ids、latest_status/error_code和needs_reclassification。不变输入新请求返回cached=True；新增后下一次归类才更新。网页按钮未接入，因此本步不提供网页归类验收入口；原文页面继续可用。无自动重试、未做浏览器真实模型端到端。旧服务需重启加载新代码/版本校验。实际总开发时间和Codex Token无法准确获取。完成后停止待验收，第4、5步尚未实施。
+
+
 ## 杂念 V1 第2步：基础页面（2026-11-16）
 
 新增左侧「杂念／思绪记录」及 `/distractions` 页面；左侧原文列表、输入与发送，右侧独立滚动原文详情；支持倒序分页、确认删除、登录及网络错误提示。用户时区用于记录时间显示，内容通过textContent展示；发送失败保留输入，结果不确定时用相同请求UUID重试。AI归类按钮禁用，后续步骤接入；普通操作未触发AI。本步无数据库迁移。
