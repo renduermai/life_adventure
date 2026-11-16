@@ -1,5 +1,18 @@
 # 项目进度
 
+## 藏经阁第1步完成（2026-11-16）
+
+用户批准第1步后已完成数据库及链接API；第2–5步未实施。用户同时修改第4步需求：每条链接左侧复制按钮，成功复制一次计数+1，普通打开不计数；本步所有链接初始click_count=0，无复制或计数接口。
+
+新增library模块models/schemas/service/router及0020_library_links迁移，API为GET /api/library/targets、GET/POST /api/library/links、GET/PATCH/DELETE /api/library/links/{id}。列表参数offset、main_quest_id或task_id，20条一页，next_offset继续。POST字段request_id(UUID)、description(1–500且非空白)、url(完整HTTP/HTTPS、最多2048、无空白/控制字符/凭据/反斜杠)、main_quest_id或task_id恰好一个；原描述和合法URL不改写。PATCH只更新关联并携带expected_version；DELETE携带expected_version软删除。新增幂等、冲突409，认证401、无效目标404、非法输入422、同源失败403；不回显不必要原始内容。只读主副本当前标题和有效性，不修改任务或奖励，不导入AI模块。
+
+数据库在线升级0020并Alembic check通过。复合外键确保同账号、CHECK限定关联二选一/非负计数/正数版本/长度，外键阻止悬空永久删除；任务软删除后默认列表隐藏其资源，链接自身保留，本人详情target_available=false，可改挂或删除；任务恢复后重新出现。副本可用性沿用现有主线归档/删除、里程碑删除、父任务删除规则；主线筛选只查直接关联，不混入子副本。
+
+实际验证：默认pytest 130 passed、53 skipped、1 warning；跳过不算通过。显式将开发库MIGRATION_DATABASE_URL仅映射为测试进程TEST_DATABASE_URL，在随机schema执行test_library_postgres.py，2 passed、1 warning、132.53秒，含Alembic check及迁移往返和清理。覆盖原描述/URL/0次数、CRUD、重复请求及内容冲突、并发重试只新增一次、直接任务筛选、改归属和版本冲突、标题实时更新、主线软删除使子任务资源不可用及恢复、新连接持久化、跨账号拒绝、非法目标/协议/关联、认证/同源、数据库复合外键和二选一约束、永久删除外键阻止。URL边界单测12 passed。唯一warning为既有Starlette/httpx弃用。compile/diff检查通过。本地8000服务已重启加载新代码：health/ready 200，library/links未登录401（路由存在），distractions 200。没有浏览器UI测试，因为本步不开发页面。
+
+接口验收：登录后同源调用GET /api/library/targets得到本人真实UUID；POST /api/library/links使用上述字段；GET列表及详情核对0次/内容，PATCH改另一目标，DELETE软删除。第2步获批前无/library页面或导航，不能以页面404认定本步API失效。现有固定名单导出不含library_links；备份需包含该表及用户/任务表。回退保留0020数据，旧代码严格版本检查需兼容回退构建；真实库不降级删表。本轮未访问任何收藏网址/调用模型/写现有任务。实际开发总耗时与Codex Token无法准确获取。停止待验收。
+
+
 ## 杂念第5步：最终联调与交付（2026-11-16）
 
 第0–5步已交付，本步补充真实数据库、浏览器与回归验证及[使用和备份说明](DISTRACTIONS.md)。未新增迁移；数据库维持0019_distraction_classification；未改主线、副本、启动状态、奖励或AI Gateway业务行为。原文/分类分别持久化，完整ID分区校验后原子发布；次数由未删除原文SQL计算，零次主题隐藏。当前同步分类预算最多11个原文批次、12次模型调用，超出明确报错并保留旧结果，属于已知容量边界。分类语义依赖模型，不能保证所有文本都合并正确。

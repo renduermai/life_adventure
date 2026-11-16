@@ -70,6 +70,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(items_router)
     from app.modules.distractions.router import router as distractions_router
     app.include_router(distractions_router)
+    from app.modules.library.router import router as library_router
+    app.include_router(library_router)
     from app.modules.startup_chat.session_router import router as chat_router
     app.include_router(chat_router)
     app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")

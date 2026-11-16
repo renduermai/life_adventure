@@ -1,5 +1,12 @@
 # 总体架构
 
+## 藏经阁第1步
+
+library只管理链接，复用identity.current_user、lock_user、quests.same_origin及主副本真实数据/可用性查询，不导入AI模块。GET /api/library/targets、GET/POST /api/library/links、GET/PATCH/DELETE /api/library/links/{id}。分页20条，按click_count降序/created_at降序/id降序。筛选main_quest_id或task_id仅匹配直接关联，不聚合子副本。JSON写入限制32768字节；认证、同源与错误提示不含原始输入。
+
+关联任务软删除/不可用时，默认列表隐藏其链接，但数据库保留；本人详情可读取target_available=false，仍可重新关联或删除。任务恢复后重新出现。标题实时查询。副本可用性沿用现有unavailable_reasons（关联主线删除/归档、里程碑删除、父任务删除）。永久删除受外键RESTRICT/NO ACTION约束，不改变原任务删除语义。
+
+
 杂念第5步联调：浏览器经真实HTTP与PostgreSQL验证完整输入→归类→主题→原文历史→刷新流程；可控模型用于确定性端到端，真实Kimi语义另见第3步验收。备份范围和容量边界见[DISTRACTIONS.md](DISTRACTIONS.md)。
 
 

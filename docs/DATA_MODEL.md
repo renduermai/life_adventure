@@ -1,5 +1,10 @@
 # 数据模型
 
+## 藏经阁：0020_library_links
+
+新增library_links：UUID id/user_id，原始description最多500字符、url最多2048字符；可空main_quest_id/task_id二选一；BigInteger click_count默认0；version默认1；create_request_id和SHA256指纹、UTC时间与deleted_at。描述/URL长度、计数非负/版本正数、恰好一个目标CHECK；复合FK保证主线/副本同用户，用户/请求UUID唯一防重复创建；归属及排序索引。无复制/点击流水表，第4步另行批准实施成功复制计数。
+
+
 ## 杂念第3步数据库版本0019_distraction_classification
 
 新增distraction_classification_runs（用户/请求唯一、输入指纹、状态、脱敏错误码及时间）、distraction_topics（版本归属、类别/具体主题摘要）、distraction_memberships（run_id/note_id唯一、nullable topic_id表示明确未归类）。复合外键约束同一用户和批次的主题、原文归属。主题次数不存模型猜测值，SQL聚合未删除记录；新原文不在旧版membership中，显示为待归类。只有成功完整批次published，旧版superseded保留，失败版本failed。无原文内容回写或其他业务表关联。回退保留新表及历史版本，不能通过真实库降级删表恢复。

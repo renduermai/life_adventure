@@ -25,6 +25,8 @@ from app.modules.startup_items import models as item_models  # noqa: F401
 
 from app.modules.distractions import models as distraction_models  # noqa: F401
 
+from app.modules.library import models as library_models  # noqa: F401
+
 config = context.config
 
 
