@@ -16,8 +16,10 @@ def run():
     def route(r):
         req=r.request
         if req.url.endswith('/targets'):
-            r.fulfill(json={'quests':[{'id':'00000000-0000-0000-0000-000000000001','title':'主线'}],'tasks':[]});return
+            r.fulfill(json={'quests':[{'id':'00000000-0000-0000-0000-000000000001','title':'主线'+'长标题'*50},{'id':'00000000-0000-0000-0000-000000000002','title':'另一个主线'}],'tasks':[]});return
         if req.method=='GET':
+            if 'main_quest_id=00000000-0000-0000-0000-000000000002' in req.url:
+                r.fulfill(status=503,json={'error':'筛选读取失败'});return
             r.fulfill(json={'items':state['items'],'next_offset':None});return
         payload=req.post_data_json;state['requests'].append(payload)
         if state['fail']:
@@ -40,6 +42,11 @@ def run():
             expect(page.locator('#library-list')).to_contain_text('保留输入')
             assert state['requests'][0]['request_id']==state['requests'][1]['request_id']
             assert page.locator('#library-target').input_value()=='main_quest_id:00000000-0000-0000-0000-000000000001'
+            page.set_viewport_size({'width':390,'height':844})
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            page.locator('#library-filter').select_option('main_quest_id:00000000-0000-0000-0000-000000000002')
+            expect(page.locator('#library-message')).to_contain_text('筛选读取失败')
+            assert page.locator('.library-item').count()==0
             browser.close()
         print('Library synthetic retry and input preservation passed')
     finally:

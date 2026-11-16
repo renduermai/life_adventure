@@ -1,5 +1,8 @@
 # 总体架构
 
+藏经阁第5步：四个真实任务入口、真实Clipboard API、数据库计数及新应用持久化联调通过；切换筛选时清空旧视图，失败只显示错误，防止旧资源归属误导。使用/备份见[LIBRARY.md](LIBRARY.md)。
+
+
 ## 藏经阁第3、4步
 
 manual_focus公共宏为主线/副本列表及详情提供书架入口，/library?target_type=quest|task&target_id=UUID只传类型及ID。页面读取本人有效targets再预选，错误/越权目标明确提示，不回退为全部。列表查询按main_quest_id或task_id，归属下拉PATCH成功后重读当前筛选，移走的链接消失；筛选保存在URL，刷新保持。
