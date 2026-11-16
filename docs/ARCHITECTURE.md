@@ -1,5 +1,8 @@
 # 总体架构
 
+藏经阁第2步：/library共享导航，独立模板、CSS、JS读取本人targets/links；URL文本只作为HTTP/HTTPS新标签链接渲染，noopener noreferrer，不计数。保存不确定时以同一UUID重试，成功保留选择。主题关联筛选/改挂与复制计数分别留第3/4步。
+
+
 ## 藏经阁第1步
 
 library只管理链接，复用identity.current_user、lock_user、quests.same_origin及主副本真实数据/可用性查询，不导入AI模块。GET /api/library/targets、GET/POST /api/library/links、GET/PATCH/DELETE /api/library/links/{id}。分页20条，按click_count降序/created_at降序/id降序。筛选main_quest_id或task_id仅匹配直接关联，不聚合子副本。JSON写入限制32768字节；认证、同源与错误提示不含原始输入。

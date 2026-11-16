@@ -23,6 +23,7 @@ PAGES = {
     "journal": {"title": "历练手记", "subtitle": "让真实的行动留下痕迹。", "symbol": "✎"},
     "growth": {"title": "成长与奖励", "subtitle": "让每一步积累被看见。", "symbol": "✦"},
     "data": {"title": "数据与恢复", "subtitle": "导出与找回你的冒险记录。", "symbol": "▣"},
+    "library": {"title": "藏经阁", "subtitle": "链接书架", "symbol": "▤"},
     "distractions": {"title": "杂念", "subtitle": "思绪记录", "symbol": "✎"},
     "startup": {"title": "启动状态", "subtitle": "先定位此刻，再决定下一步。", "symbol": "◈"},
     "spirit-stones": {"title": "灵石区", "subtitle": "AI 能力中心", "symbol": "◆"},
@@ -128,6 +129,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/journey", response_class=HTMLResponse)
     def journey(request: Request):
         return render(request, "journey")
+
+    @app.get("/library", response_class=HTMLResponse)
+    def library_page(request: Request):
+        return templates.TemplateResponse(request=request, name="library.html", context={
+            "pages": PAGES, "page": "library", "current": PAGES["library"], "app_name": settings.app_name})
 
     @app.get("/distractions", response_class=HTMLResponse)
     def distractions(request: Request):
