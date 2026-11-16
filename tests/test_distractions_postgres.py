@@ -89,6 +89,10 @@ def test_validation_auth_and_private_errors(notes, caplog):
         assert r.status_code == 422, r.text
     r = client.post(BASE, headers=HEADERS, json={'request_id':str(uuid4()), 'content':secret, 'task_id':str(uuid4())})
     assert r.status_code == 422 and secret not in r.text and secret not in caplog.text
+    long_text = '合成原文' + '字' * 4996
+    saved = client.post(BASE, headers=HEADERS, json={'request_id':str(uuid4()), 'content':long_text})
+    assert saved.status_code == 200 and saved.json()['content'] == long_text
+    assert client.get(BASE + '/' + saved.json()['id']).json()['content'] == long_text
     assert client.post(BASE, json={'request_id':str(uuid4()), 'content':'x'}).status_code == 403
     client.cookies.clear()
     assert client.get(BASE).status_code == 401

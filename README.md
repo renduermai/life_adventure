@@ -44,4 +44,4 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe tests/browser_v3_startup.py
 ```
 
-这些浏览器脚本使用合成HTTP响应；实际模型/数据库验收另见 ACCEPTANCE.md。模型调用可能产生费用。任务数据保存在PostgreSQL，已保存事项可导出；现有导出不等于全库备份，也不提供自动导入。历史数据破坏性迁移须单独批准。详细历史进度见 PROGRESS.md。
+这些浏览器脚本使用合成HTTP响应；实际模型/数据库验收另见 ACCEPTANCE.md。模型调用可能产生费用。任务数据保存在PostgreSQL，已保存事项可导出；现有导出不等于全库备份，也不提供自动导入。历史数据破坏性迁移须单独批准。详细历史进度见 PROGRESS.md。「杂念」的使用、验收和完整数据库备份注意事项见 docs/DISTRACTIONS.md。

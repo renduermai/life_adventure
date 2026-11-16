@@ -49,6 +49,11 @@ def test_version_cache_failure_and_counts(notes,monkeypatch):
     client.cookies.set('camp_session', str(other))
     assert client.get(url,params={'kind':'topic','topic_id':str(topic)}).status_code==409
     client.cookies.set('camp_session', str(uid))
+    with sessions.begin() as db:
+        remaining = list(db.scalars(select(DistractionNote).where(DistractionNote.user_id == uid, DistractionNote.deleted_at.is_(None))))
+        for note in remaining:
+            service.delete(db, uid, note.id, Delete(expected_version=note.version))
+    assert client.get('/api/distractions/notes/classification/current').json()['groups'] == []
 
 
 
@@ -80,6 +85,155 @@ def test_batches_unclassified_and_snapshot_change(notes,monkeypatch):
     monkeypatch.setattr(cs.AIService,'generate',unclassified)
     result=cs.classify(app.state.database,None,uid,uuid4())
     assert not result['groups'] and len(result['unclassified_note_ids'])==result['total']
+
+
+def test_http_classification_history_restart_and_failures(notes, monkeypatch):
+    import json
+    from app.main import create_app
+    from app.core.config import Settings
+    from fastapi.testclient import TestClient
+    from app.modules.distractions.models import ClassificationRun, DistractionMembership
+    client, sessions, uid, other, app = notes
+    monkeypatch.setattr(cs, 'configuration', lambda db, user: (UUID(int=1), 1))
+    headers = {'Origin': 'http://testserver'}
+    originals = [
+        '  担心技术不够，无法胜任岗位。\n原文不修剪  ',
+        '看到招聘要求很高，担心自己能力不足。',
+        '担心学习进度跟不上计划。',
+        '担心学习进度跟不上计划。',
+    ]
+    for content in originals:
+        response = client.post('/api/distractions/notes', headers=headers,
+            json={'request_id': str(uuid4()), 'content': content})
+        assert response.status_code == 200, response.text
+    seen = []
+    def classify_reply(self, user, purpose, messages, request_id, **kwargs):
+        units = json.loads(messages[-1]['content'])
+        seen.append(len(units))
+        return {'content': cs.Result(groups=[
+            {'category':'未来规划', 'summary':'担心求职能力', 'note_ids':[x['id'] for x in units if '进度' not in x['text']]},
+            {'category':'未来规划', 'summary':'担心学习进度', 'note_ids':[x['id'] for x in units if '进度' in x['text']]},
+        ], unclassified_note_ids=[])}
+    monkeypatch.setattr(cs.AIService, 'generate', classify_reply)
+    endpoint = '/api/distractions/notes/classifications'
+    first = client.post(endpoint, headers=headers, json={'request_id':str(uuid4())})
+    assert first.status_code == 200, first.text
+    result = first.json()
+    assert seen == [4] and [group['count'] for group in result['groups']] == [2, 2]
+    assert len({group['category'] for group in result['groups']}) == 1
+    assert client.post(endpoint, headers=headers, json={'request_id':str(uuid4())}).json()['cached']
+    assert seen == [4]
+    run = result['run_id']
+    group = next(g for g in result['groups'] if '求职' in g['summary'])
+    detail_url = f'/api/distractions/notes/classification/{run}/entries'
+    detail = client.get(detail_url, params={'kind':'topic','topic_id':group['id']})
+    assert detail.status_code == 200
+    assert {x['content'] for x in detail.json()['items']} == set(originals[:2])
+    assert all(x['created_at'] for x in detail.json()['items'])
+
+    from contextlib import contextmanager
+    app2 = create_app(Settings(_env_file=None))
+    app2.state.database.sessions = sessions
+    @contextmanager
+    def transaction():
+        with sessions.begin() as db:
+            yield db
+    app2.state.database.transaction = transaction
+    with TestClient(app2) as fresh:
+        fresh.cookies.set('camp_session', str(uid))
+        assert fresh.get('/api/distractions/notes/classification/current').json()['run_id'] == run
+        assert len(fresh.get(detail_url, params={'kind':'topic','topic_id':group['id']}).json()['items']) == 2
+
+    def fail(code):
+        def generate(*args, **kwargs):
+            raise AIError(code, '合成失败', 502)
+        monkeypatch.setattr(cs.AIService, 'generate', generate)
+        response = client.post(endpoint, headers=headers, json={'request_id':str(uuid4())})
+        assert response.status_code == 502
+        assert client.get('/api/distractions/notes/classification/current').json()['run_id'] == run
+    added = client.post('/api/distractions/notes', headers=headers,
+        json={'request_id':str(uuid4()), 'content':'待归类的新杂念'})
+    assert added.status_code == 200
+    current = client.get('/api/distractions/notes/classification/current').json()
+    assert len(current['pending_note_ids']) == 1 and current['needs_reclassification']
+    fail('invalid_json')
+    fail('invalid_schema')
+    fail('upstream_timeout')
+    monkeypatch.setattr(cs.AIService, 'generate', classify_reply)
+    from sqlalchemy.orm import Session
+    from app.modules.distractions.models import DistractionTopic
+    original_flush = Session.flush
+    failed_once = {'value': False}
+    def fail_topic_flush(self, *args, **kwargs):
+        if not failed_once['value'] and any(isinstance(row, DistractionTopic) for row in self.new):
+            failed_once['value'] = True
+            raise RuntimeError('synthetic topic write failure')
+        return original_flush(self, *args, **kwargs)
+    monkeypatch.setattr(Session, 'flush', fail_topic_flush)
+    response = client.post(endpoint, headers=headers, json={'request_id':str(uuid4())})
+    assert response.status_code == 502 and response.json()['code'] == 'classification_failed'
+    assert failed_once['value']
+    assert client.get('/api/distractions/notes/classification/current').json()['run_id'] == run
+    monkeypatch.setattr(Session, 'flush', original_flush)
+    with sessions() as db:
+        assert db.scalar(select(func.count()).select_from(DistractionMembership).where(DistractionMembership.run_id == UUID(run))) == 4
+        assert db.scalar(select(func.count()).select_from(ClassificationRun).where(ClassificationRun.user_id == uid, ClassificationRun.status == 'published')) == 1
+    client.cookies.set('camp_session', str(other))
+    assert client.get(detail_url, params={'kind':'topic','topic_id':group['id']}).status_code == 409
+
+
+def test_browser_real_database_with_controlled_model(notes, monkeypatch):
+    import json
+    import socket
+    import threading
+    import time
+    import uvicorn
+    from playwright.sync_api import sync_playwright, expect
+    client, sessions, uid, _, app = notes
+    monkeypatch.setattr(cs, 'configuration', lambda db, user: (UUID(int=1), 1))
+    def grouped(self, user, purpose, messages, request_id, **kwargs):
+        units = json.loads(messages[-1]['content'])
+        return {'content': cs.Result(groups=[
+            {'category':'未来', 'summary':'担心求职能力', 'note_ids':[x['id'] for x in units if '求职' in x['text']]},
+            {'category':'未来', 'summary':'担心学习进度', 'note_ids':[x['id'] for x in units if '学习' in x['text']]},
+        ], unclassified_note_ids=[])}
+    monkeypatch.setattr(cs.AIService, 'generate', grouped)
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1', 0))
+        port = sock.getsockname()[1]
+    server = uvicorn.Server(uvicorn.Config(app, host='127.0.0.1', port=port, log_level='error', access_log=False))
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    try:
+        for _ in range(100):
+            if server.started: break
+            time.sleep(.05)
+        assert server.started
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(channel='msedge', headless=True)
+            context = browser.new_context(viewport={'width': 1440, 'height': 900})
+            context.add_cookies([{'name':'camp_session','value':str(uid),'url':f'http://127.0.0.1:{port}'}])
+            page = context.new_page()
+            errors = []
+            page.on('pageerror', lambda exc: errors.append(str(exc)))
+            page.goto(f'http://127.0.0.1:{port}/distractions')
+            for index, content in enumerate(['求职担忧：技术能力不足', '求职担忧：岗位要求很高', '学习担忧：进度赶不上'], 1):
+                page.locator('#thought-input').fill(content)
+                page.locator('#thought-send').click()
+                expect(page.locator('.thought-item')).to_have_count(index, timeout=15000)
+            page.locator('#thought-classify').click()
+            expect(page.locator('#thought-list')).to_contain_text('【2次】【未来】担心求职能力', timeout=15000)
+            page.get_by_role('button', name='【2次】【未来】担心求职能力').click()
+            expect(page.locator('.thought-history-entry')).to_have_count(2)
+            page.reload()
+            expect(page.locator('#thought-list')).to_contain_text('【2次】【未来】担心求职能力')
+            page.set_viewport_size({'width': 390, 'height': 844})
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            assert not errors, errors
+            browser.close()
+    finally:
+        server.should_exit = True
+        thread.join(timeout=10)
 
 
 def test_live_kimi_synthetic_notes(notes,monkeypatch):
