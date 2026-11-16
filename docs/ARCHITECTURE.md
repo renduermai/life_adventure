@@ -1,5 +1,8 @@
 # 总体架构
 
+杂念第4步：页面显式触发已有分类接口，展示已发布主题、待归类和待确认；主题原文通过校验用户及当前run版本的entries接口分页读取，按当前有效原文显示和删除。
+
+
 ## 杂念第3步：分类版本发布
 
 `POST /api/distractions/notes/classifications` 接收request_id；`GET /api/distractions/notes/classification/current`读取保存的分类、数据库次数、待归类/明确未归类ID、最近尝试状态与错误码。只在显式POST调用模型。distraction_classification用途复用Gateway配置/绑定/安全出站与Pydantic校验，单次输出4096 tokens、90秒，无自动重试。原文集合、模型配置版本与thoughts-v2提示词组成缓存指纹。事务外调用，发布前锁用户并复核有效原文/配置/运行状态；全量ID去重且完全覆盖才原子发布，旧版标记superseded保留。失败独立记录错误码，不清除旧版。

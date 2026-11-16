@@ -5,13 +5,13 @@
 <div class="thought-layout" id="thoughts" data-timezone="{{ user_timezone }}">
   <section class="card thought-main" aria-labelledby="thought-heading">
     <div class="thought-title"><div><p class="eyebrow">A SPACE TO UNLOAD</p><h2 id="thought-heading">让思绪有个落脚处</h2><p class="muted">想到什么，就先记下来。每一个念头都值得被听见。</p></div><span class="thought-symbol" aria-hidden="true">✧</span></div>
-    <div class="thought-list-head"><h3>我的杂念</h3><span class="muted">按记录时间排列</span></div>
+    <div class="thought-list-head"><h3>我的杂念</h3><span class="muted">主题按出现次数排序</span></div>
     <p id="thought-message" role="status" aria-live="polite"></p>
     <div id="thought-list" class="thought-list" aria-label="原始杂念列表"></div>
     <button id="thought-more" class="button secondary" type="button" hidden>加载更多</button>
     <button id="thought-reload" class="button secondary" type="button" hidden>重新读取</button>
-    <form id="thought-form" class="thought-compose"><label for="thought-input">此刻，你在想什么？</label><textarea id="thought-input" rows="4" maxlength="5000" placeholder="写下现在脑海中的想法……" required></textarea><div class="thought-actions"><span class="muted">原文会保存在你的账号中</span><div><button class="button secondary" type="button" disabled title="AI 归类将在后续步骤开放">✦ AI 一键归类</button> <button id="thought-send" class="button primary" type="submit">发送 ↗</button></div></div></form>
+    <form id="thought-form" class="thought-compose"><label for="thought-input">此刻，你在想什么？</label><textarea id="thought-input" rows="4" maxlength="5000" placeholder="写下现在脑海中的想法……" required></textarea><div class="thought-actions"><span class="muted">归类时会将有效原文发送至灵石区配置的模型，可能产生费用。</span><div><button id="thought-classify" class="button secondary" type="button">✦ AI 一键归类</button> <button id="thought-send" class="button primary" type="submit">发送 ↗</button></div></div></form>
   </section>
-  <aside class="card thought-history" aria-labelledby="history-heading"><p class="eyebrow">YOUR THOUGHTS</p><h2 id="history-heading">原文记录</h2><p class="muted">点击左侧记录，查看完整内容和时间。</p><div id="thought-detail" class="thought-detail" aria-live="polite"><p class="muted">选择一条杂念，在这里回看。</p></div></aside>
+  <aside class="card thought-history" aria-labelledby="history-heading"><p class="eyebrow">YOUR THOUGHTS</p><h2 id="history-heading">原文记录</h2><p class="muted">点击左侧主题，查看完整原文和时间。</p><div id="thought-detail" class="thought-detail" aria-live="polite"><p class="muted">选择一条杂念，在这里回看。</p></div><button id="detail-more" class="button secondary" type="button" hidden>加载更多原文</button></aside>
 </div>
 {% endblock %}

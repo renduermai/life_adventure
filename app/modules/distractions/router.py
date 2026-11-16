@@ -71,3 +71,30 @@ def classification_current(request: Request):
             return view(db, uid)
     except AIError as exc:
         return error_response(request, exc)
+
+
+@router.get('/classification/{run_id}/entries')
+def classification_entries(request: Request, run_id: UUID, kind: str = Query(..., pattern='^(topic|pending|unclassified)$'), topic_id: UUID | None = None, offset: int = Query(default=0, ge=0)):
+    from sqlalchemy import select
+    from app.modules.identity.service import lock_user
+    from app.modules.distractions.models import DistractionNote, ClassificationRun, DistractionMembership, DistractionTopic
+    try:
+        uid = user_id(request)
+        with request.app.state.database.transaction() as db:
+            lock_user(db, uid)
+            run = db.scalar(select(ClassificationRun).where(ClassificationRun.id == run_id, ClassificationRun.user_id == uid, ClassificationRun.status == 'published'))
+            if not run:
+                raise AIError('stale', '归类结果已更新，请重新读取', 409)
+            membership = select(DistractionMembership.note_id).where(DistractionMembership.run_id == run_id, DistractionMembership.user_id == uid)
+            if kind == 'topic':
+                topic = db.scalar(select(DistractionTopic).where(DistractionTopic.id == topic_id, DistractionTopic.run_id == run_id, DistractionTopic.user_id == uid))
+                if not topic: raise AIError('not_found', '主题不存在', 404)
+                membership = membership.where(DistractionMembership.topic_id == topic_id)
+            elif kind == 'unclassified':
+                membership = membership.where(DistractionMembership.topic_id.is_(None))
+            query = select(DistractionNote).where(DistractionNote.user_id == uid, DistractionNote.deleted_at.is_(None))
+            query = query.where(DistractionNote.id.not_in(membership) if kind == 'pending' else DistractionNote.id.in_(membership))
+            rows = list(db.scalars(query.order_by(DistractionNote.created_at.desc(), DistractionNote.id.desc()).offset(offset).limit(21)))
+            return {'items': [service.public(item) for item in rows[:20]], 'next_offset': offset + 20 if len(rows) > 20 else None}
+    except AIError as exc:
+        return error_response(request, exc)

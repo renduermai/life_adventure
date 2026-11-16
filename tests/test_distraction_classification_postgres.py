@@ -42,6 +42,13 @@ def test_version_cache_failure_and_counts(notes,monkeypatch):
     monkeypatch.setattr(cs.AIService,'generate',lambda *a,**k:{'content':cs.Result(groups=[],unclassified_note_ids=[uuid4()])})
     with pytest.raises(AIError,match='编号'): cs.classify(app.state.database,None,uid,uuid4())
     assert client.get('/api/distractions/notes/classification/current').json()['groups'][0]['count']==2
+    topic=result['groups'][0]['id']; run=result['run_id']
+    url=f'/api/distractions/notes/classification/{run}/entries'
+    response=client.get(url,params={'kind':'topic','topic_id':str(topic)})
+    assert response.status_code==200 and len(response.json()['items'])==2
+    client.cookies.set('camp_session', str(other))
+    assert client.get(url,params={'kind':'topic','topic_id':str(topic)}).status_code==409
+    client.cookies.set('camp_session', str(uid))
 
 
 

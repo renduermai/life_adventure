@@ -14,14 +14,24 @@ def run():
     server = uvicorn.Server(uvicorn.Config(app, host='127.0.0.1', port=8768, log_level='error', access_log=False))
     threading.Thread(target=server.run, daemon=True).start()
     items, requests = [], []
-    state = {'failure': False, 'unauthorized': False}
+    grouped = {'on':False}
+    state = {'failure': False, 'unauthorized': False, 'ai_failure':False}
     def respond(route):
         req = route.request
         assert '/api/distractions/notes' in req.url
         if state['unauthorized']:
             route.fulfill(status=401, json={'error':'unauthorized'}); return
+        if '/classification/current' in req.url:
+            route.fulfill(json={'run_id':'00000000-0000-0000-0000-000000000001' if grouped['on'] else None, 'groups':[{'id':'00000000-0000-0000-0000-000000000002','category':'求职','summary':'担心能力','count':len(items)}] if grouped['on'] and items else [], 'pending_note_ids':[], 'unclassified_note_ids':[], 'total':len(items), 'needs_reclassification':False}); return
+        if '/entries?' in req.url:
+            route.fulfill(json={'items':items, 'next_offset':None}); return
         if req.method == 'GET':
             route.fulfill(json={'items':items, 'next_offset':None}); return
+        if req.url.endswith('/classifications'):
+            if state['ai_failure']:
+                route.fulfill(status=504,json={'error':'模型超时，旧结果已保留','code':'upstream_timeout'}); return
+            grouped['on']=True
+            route.fulfill(json={'run_id':'00000000-0000-0000-0000-000000000001','groups':[{'id':'00000000-0000-0000-0000-000000000002','category':'求职','summary':'担心能力','count':len(items)}], 'pending_note_ids':[], 'unclassified_note_ids':[], 'total':len(items), 'needs_reclassification':False, 'cached':False}); return
         data = req.post_data_json
         requests.append((req.method, data))
         if state['failure']:
@@ -44,7 +54,7 @@ def run():
             page.goto('http://127.0.0.1:8768/distractions')
             expect(page.locator('#thought-list')).to_contain_text('还没有记录')
             expect(page.locator('a.nav-item.active')).to_contain_text('杂念')
-            assert page.get_by_role('button',name='✦ AI 一键归类').is_disabled()
+            assert page.get_by_role('button',name='✦ AI 一键归类').is_enabled()
             state['failure']=True
             page.locator('#thought-input').fill('  测试\n<img src=x onerror=alert(1)>  ')
             page.locator('#thought-send').click()
@@ -66,6 +76,16 @@ def run():
             page.on('dialog',lambda dialog:dialog.accept())
             page.locator('.thought-delete').last.click()
             expect(page.locator('.thought-item')).to_have_count(1)
+            page.get_by_role('button',name='✦ AI 一键归类').click()
+            expect(page.locator('#thought-list')).to_contain_text('【1次】【求职】')
+            page.locator('#thought-list button').first.click()
+            expect(page.locator('#thought-detail')).to_contain_text('另一个念头')
+            state['ai_failure']=True
+            page.get_by_role('button',name='✦ AI 一键归类').click()
+            expect(page.locator('#thought-message')).to_contain_text('模型超时')
+            expect(page.locator('#thought-list')).to_contain_text('【1次】【求职】')
+            page.reload()
+            expect(page.locator('#thought-list')).to_contain_text('【1次】【求职】')
             page.set_viewport_size({'width':390,'height':844})
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert page.locator('#thought-detail').is_visible()
