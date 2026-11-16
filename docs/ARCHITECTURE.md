@@ -1,5 +1,10 @@
 # 总体架构
 
+## 杂念 V1：独立原文服务
+
+`distractions`仅关联身份模块，复用认证、同源JSON检查、事务及错误响应。POST/GET `/api/distractions/notes`、GET/DELETE `/{note_id}`。原文不可编辑，保留空格换行；请求UUID+SHA256防止重复保存，用户行锁串行化新增与删除。列表按created_at/id倒序，每页20条，next_offset用于继续读取。删除校验expected_version并软删除。不使用浏览器存储持久化，不调用AI，不注册页面或导航。
+
+
 项目采用 Python/FastAPI 模块化单体、Jinja模板、本地 JavaScript/CSS、SQLAlchemy、Alembic和PostgreSQL。Gateway统一提供AI配置加密、用途绑定、安全出站、调用预算及只含元数据的调用记录。
 
 ## V3 数据流

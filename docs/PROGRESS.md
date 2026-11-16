@@ -1,5 +1,16 @@
 # 项目进度
 
+## 杂念 V1 第1步：原文后端（2026-11-16）
+
+用户批准第1步，已交付原文保存/列表/详情/软删除API，无页面、导航或AI分类。原文最多5000字符，保留空白换行，拒绝全空白/NUL；相同内容独立请求分别记录，同一UUID请求幂等，冲突409。用户归属隔离、同源检查、版本冲突及软删除均已验证。数据库已在线升级0018_distraction_notes，Alembic check无差异，新应用实例数据库readiness通过；只增加新表，未改写旧用户业务记录。
+
+实际测试：默认pytest 117 passed、46 skipped、1 warning；跳过不计通过。随后显式将开发库MIGRATION_DATABASE_URL仅在测试进程映射到TEST_DATABASE_URL，在随机隔离schema运行test_distractions_postgres.py与test_postgres_integration.py：4 passed、1 warning，137.36秒。不是另备独立测试数据库；fixture只创建合成用户/记录，测试schema结束清理。覆盖原文保真、独立重复记录、请求重试/冲突、软删除、跨用户隔离、无登录、同源、非法输入不回显、分页、并发幂等、事务回滚、新应用读取、迁移check及往返。通过monkeypatch禁止原文接口调用AI；本轮未发送原文至模型。唯一warning为既有Starlette/httpx弃用。编译检查通过。
+
+接口验收：启动/重启应用 `.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000`，登录现有账号后使用同源请求POST `/api/distractions/notes`，JSON为request_id(UUID)、content；GET列表及`/{id}`；DELETE `/{id}`携带expected_version=1。列表每页20条，使用next_offset继续。页面与导航尚未开发，因此本步没有网页录入入口；未执行本模块浏览器UI测试。已验证新实例，未自动停止或重启用户现有服务；旧实例如仍校验0017需重启。
+
+回退：保留0018数据表，不在真实库运行downgrade；旧代码严格校验版本，需兼容0018的回退构建。现有固定名单导出不含杂念，应另用完整数据库备份。AI主题表留第3步，UI留第2步获批后实施。本步停止待验收；实际开发Token与总耗时无法准确获取。
+
+
 ## V3 第6步：旧链路清理与最终联调（2026-11-16）
 
 第5、6步按用户连续授权完成，V3第0–6步现均已交付待验收。删除14个旧生产文件：旧推荐Service/路由、旧永久聊天Service/路由/Schema、旧拆解写回Service/路由/Schema、4份专属JS、2份旧模板；清理对应无用CSS、状态历史读取路由和AI来源建议入口。旧专属契约的7份pytest文件、2份浏览器脚本及2份真实探测脚本随功能退役移除；替代为新版会话Schema/权限/不写回/复制流程、旧路由404、事项/五色及协同测试。数量变化不能视为旧功能逐项测试仍运行。历史源码可在v3-step5-session标签恢复。

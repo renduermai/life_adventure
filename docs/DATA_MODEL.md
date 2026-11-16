@@ -1,6 +1,11 @@
 # 数据模型
 
-当前数据库版本：`0017_item_analysis`。V3第5、6步没有数据库迁移，未删除历史表、字段或记录。
+## 杂念 V1 第1步
+
+新增迁移`0018_distraction_notes`，仅增加`distraction_notes`：UUID id/user_id/create_request_id，TEXT content，version，create_fingerprint，UTC created_at/updated_at/deleted_at。只外键关联users；(user_id,create_request_id)及(id,user_id)唯一，(user_id,created_at,id)索引，长度1–5000及version>=1约束。应用另拒绝空白和NUL，不修剪原文。不含分类/主题表。
+
+
+V3交付时数据库版本：`0017_item_analysis`。V3第5、6步没有数据库迁移，未删除历史表、字段或记录。
 
 ## 当前业务
 
