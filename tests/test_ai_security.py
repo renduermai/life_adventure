@@ -95,7 +95,7 @@ def test_generation_wait_uses_remaining_total_budget(monkeypatch):
 
 def test_task_analysis_truncation_and_validation_codes():
     from app.modules.ai_gateway.adapter import OpenAICompatibleAdapter
-    from app.modules.task_recommendation.service import Features
+    from app.modules.startup_items.analysis import Classification as Features
 
     truncated={'choices':[{'finish_reason':'length','message':{'content':'{"keyword":"半'}}]}
     with pytest.raises(s.AIError) as exc:

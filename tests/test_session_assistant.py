@@ -47,3 +47,28 @@ def test_manual_focus_preserves_target_entry():
         html=template.module.manual_focus(kind,item)
         assert f'task_type={kind}&amp;task_id={item.id}#chat' in html
         assert 'data-breakdown-link' in html and '常规多练习' in html
+
+
+@pytest.mark.parametrize('method,path',[
+    ('GET','/api/startup/recommendations'),('POST','/api/startup/refresh'),
+    ('GET','/api/startup/target'),('GET','/api/startup/history'),
+    ('GET','/api/startup/chat/conversations'),('POST','/api/startup/breakdowns'),
+    ('PATCH','/api/startup/task-analyses/'+str(uuid4())),
+    ('POST','/api/startup/breakdowns/'+str(uuid4())+'/confirm'),
+])
+def test_legacy_routes_retired(client,method,path):
+    assert client.request(method,path).status_code==404
+
+
+def test_legacy_state_suggestion_cannot_be_applied(client):
+    response=client.post('/api/startup/states',headers={'Origin':'http://testserver'},json={
+        'pressure':50,'energy':50,'confirmed':True,'expected_generation':0,
+        'request_id':str(uuid4()),'source_turn_id':str(uuid4())})
+    assert response.status_code==422
+
+
+def test_task_context_rejects_other_owner(monkeypatch):
+    from app.modules.startup_state import context
+    from app.modules.ai_gateway.security import AIError
+    monkeypatch.setattr(context,'get_quest',lambda *args:None)
+    with pytest.raises(AIError):context.target_context(None,uuid4(),'quest',uuid4())

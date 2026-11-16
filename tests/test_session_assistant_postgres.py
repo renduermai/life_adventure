@@ -73,3 +73,42 @@ def test_access_account_binding_and_opt_in_summaries(ai,monkeypatch):
     assert client.post('/api/startup/chat/messages',json=payload(camp['user'])).status_code==403
     client.cookies.clear()
     assert client.get('/api/startup/chat/context').status_code==401
+
+
+def test_v3_manual_label_item_analysis_session_and_export_coexist(ai,monkeypatch):
+    import io,json,zipfile
+    from app.modules.startup_items.analysis import Classification
+    camp,_,_,client=ai
+    from test_ai_postgres import make
+    make(ai)
+    with camp['sessions'].begin() as db:
+        task=Task(user_id=camp['user'],title='练习项目',description='已建好目录，今天看一眼',main_quest_id=camp['quest'])
+        db.add(task);db.flush();tid=task.id
+    label=client.patch(f'/api/tasks/{tid}/manual-focus',headers=HEADERS,json={'status':'routine_practice','expected_version':1})
+    assert label.status_code==200
+    created=client.post('/api/startup/items',headers=HEADERS,json={'request_id':str(uuid4()),'description':'整理桌面',
+        'importance':35,'urgency':30,'progress':'已经整理一半'}).json()
+    def provider(self,uid,purpose,messages,request_id,schema=None,**kwargs):
+        if purpose=='task_analysis':
+            item=json.loads(messages[-1]['content'])
+            return {'content':Classification(item_id=item['item_id'],keyword='整理桌面',quadrant='修复区',reason='适合轻量启动',action='先挪一支笔')}
+        return {'content':reply(needs_clarification=False,reply='只打开目录即可。',steps=[dict(title='打开目录',detail='先看一眼',minutes=1,done_when='看到列表')],minimum_action='只打开目录')}
+    monkeypatch.setattr(planning.AIService,'generate',provider)
+    classified=client.post('/api/startup/items/'+created['id']+'/analyze',headers=HEADERS,json={'request_id':str(uuid4())})
+    assert classified.json()['item']['analysis']['result']['quadrant']=='修复区'
+    state=client.post('/api/startup/states',headers=HEADERS,json={'pressure':80,'energy':25,'confirmed':True,
+        'expected_generation':0,'request_id':str(uuid4())})
+    assert state.json()['quadrant']=='修复区'
+    answer=client.post('/api/startup/chat/messages',headers=HEADERS,json=payload(camp['user'],mode='breakdown',task_type='task',task_id=str(tid),message='只有一分钟，帮我再拆小一点'))
+    assert answer.status_code==200,answer.text
+    assert client.post('/api/startup/items/'+created['id']+'/analyze',headers=HEADERS,json={'request_id':str(uuid4())}).json()['cached']
+    exported=client.post('/data/export',headers=HEADERS)
+    assert exported.status_code==200
+    data=json.loads(zipfile.ZipFile(io.BytesIO(exported.content)).read('adventure-camp.json'))
+    assert data['tables']['startup_items'][0]['analysis_result']['quadrant']=='修复区'
+    assert next(t for t in data['tables']['tasks'] if t['id']==str(tid))['manual_focus_status']=='routine_practice'
+    with camp['sessions']() as db:
+        task=db.get(Task,tid)
+        assert task.status=='todo' and task.version==1 and task.manual_focus_status=='routine_practice'
+        assert db.scalar(select(func.count()).select_from(Task).where(Task.user_id==camp['user']))==1
+        assert db.scalar(select(func.count()).select_from(StartupItem).where(StartupItem.user_id==camp['user']))==1
