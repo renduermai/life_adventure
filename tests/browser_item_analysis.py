@@ -34,6 +34,8 @@ def run():
         elif path == '/api/startup/states':
             state = dict(request.post_data_json, generation=state['generation'] + 1, snapshot_id=str(uuid4()))
             value = state
+        elif path == '/api/startup/chat/context':
+            value = {'owner_id':'00000000-0000-0000-0000-000000000001','target':None}
         elif path == '/api/startup/chat/conversations':
             value = {'items': [], 'next_offset': None}
         elif path == '/api/startup/items':

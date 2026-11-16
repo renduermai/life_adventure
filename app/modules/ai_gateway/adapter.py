@@ -10,10 +10,11 @@ class OpenAICompatibleAdapter:
     def __init__(self, transport):
         self.transport=transport
 
-    def generate(self,url,key,model,messages,output_schema=None,max_tokens=512):
+    def generate(self,url,key,model,messages,output_schema=None,max_tokens=512,json_mode=False):
         payload={'model':model,'messages':messages,'max_tokens':max_tokens}
         if output_schema:
             payload['messages']=[{'role':'system','content':'Return only a JSON object matching this schema: '+json.dumps(output_schema.model_json_schema())}]+messages
+        if json_mode:payload['response_format']={'type':'json_object'}
         stage='request';raw=None;content=None
         try:
             raw=self.transport(url,key,payload)

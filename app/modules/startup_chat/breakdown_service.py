@@ -19,6 +19,7 @@ from app.modules.startup_state.models import StateCurrent, StateSnapshot
 from app.modules.task_recommendation.service import current_view
 from app.modules.startup_chat.breakdown_models import BreakdownPlan
 from app.modules.startup_chat.breakdown_schemas import Advice
+from app.modules.startup_chat.planning import generate_structured
 
 
 def digest(data):
@@ -146,7 +147,7 @@ def generate(database, settings, uid, data):
     while history and len(json.dumps({'target':prompt_ctx,'previous':history,'feedback':data.feedback},ensure_ascii=False))>20000:
         history.pop()
     try:
-        answer=AIService(database,settings).generate(uid,'breakdown',[
+        answer=generate_structured(database,settings,uid,'breakdown',[
             {'role':'system','content':prompt},
             {'role':'user','content':json.dumps({'target':prompt_ctx,'previous':list(reversed(history)),'feedback':data.feedback},ensure_ascii=False)}],data.request_id,Advice)
         advice=Advice.model_validate(answer['content']).model_dump()

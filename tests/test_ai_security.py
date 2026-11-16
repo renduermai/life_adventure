@@ -111,3 +111,22 @@ def test_task_analysis_truncation_and_validation_codes():
     with pytest.raises(s.AIError) as exc:
         OpenAICompatibleAdapter(lambda *a:wrong).generate('url','key','model',[],Features)
     assert exc.value.code=='invalid_schema'
+
+
+def test_session_native_json_and_explicit_wait_budget(monkeypatch):
+    from app.modules.ai_gateway.adapter import OpenAICompatibleAdapter
+    from pydantic import BaseModel
+    class Output(BaseModel):answer:str
+    captured=[]
+    def provider(url,key,payload):
+        captured.append(payload)
+        return {'choices':[{'message':{'content':'{"answer":"ok"}'}}]}
+    assert OpenAICompatibleAdapter(provider).generate('url','key','model',[],Output,json_mode=True)[0].answer=='ok'
+    assert captured[0]['response_format']=={'type':'json_object'}
+    monkeypatch.setattr(s,'resolve',lambda host:['8.8.8.8'])
+    monkeypatch.setattr(s.time,'monotonic',lambda:100.)
+    connection=Mock();connection.getresponse.return_value.status=200
+    connection.getresponse.return_value.read1.side_effect=[b'{}',b'']
+    monkeypatch.setattr(s,'PinnedHTTPS',Mock(return_value=connection))
+    assert s.post_json('https://example.com/v1','test-key',{},timeout_seconds=90)=={}
+    assert all(call.args[0]==90 for call in connection.sock.settimeout.call_args_list)

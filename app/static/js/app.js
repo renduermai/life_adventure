@@ -1,4 +1,5 @@
 (() => {
+  document.querySelector('form[action="/account/logout"]')?.addEventListener('submit',()=>{try{sessionStorage.removeItem('adventure-assistant-v3');}catch(_){}});
   const root = document.documentElement;
   const toggle = document.getElementById("theme-toggle");
   function updateTheme(theme) {

@@ -1,118 +1,48 @@
 (() => {
- const form=document.querySelector('#chat-form'),input=document.querySelector('#chat-input'),status=document.querySelector('#chat-status'),list=document.querySelector('#chat-messages'),select=document.querySelector('#chat-conversations');
- const more=document.querySelector('#chat-more'),newButton=document.querySelector('#chat-new'),moreChats=document.querySelector('#chat-more-conversations');
- let cid=null,version=0,busy=true,pending=null,before=null,chatOffset=null,reading=0;
- const selectedBox=document.querySelector('#coach-selected'),clearButton=document.querySelector('#coach-clear'),breakdownButton=document.querySelector('#coach-breakdown');
- const stateBox=document.querySelector('#coach-state-summary');
- const initialParams=new URLSearchParams(location.search),initialType=initialParams.get('coach_type'),initialId=initialParams.get('coach_id');
- let selectedKey=['quest','task'].includes(initialType)&&/^[0-9a-fA-F-]{36}$/.test(initialId||'')?initialType+':'+initialId:null;
- let selectionDirty=Boolean(selectedKey),selectionVersion=0,recommendationItems=[];
- async function api(url,method='GET',data){const r=await fetch(url,{method,headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined});const value=await r.json();if(!r.ok){const e=Error(value.error||'暂不可用，请稍后再试');e.status=r.status;throw e;}return value;}
- function element(tag,text,cls){const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;return el;}
- function controls(){form.querySelectorAll('button,textarea').forEach(x=>x.disabled=busy);select.disabled=busy;newButton.disabled=busy;more.disabled=busy;moreChats.disabled=busy;clearButton.disabled=busy;breakdownButton.disabled=busy;}
- function renderState(){
-  if(!stateBox)return;
-  const state=window.startupState;
-  stateBox.textContent=state?.confirmed?`${state.quadrant} · 压力 ${state.pressure} · 能量 ${state.energy}${state.difficulty?' · '+state.difficulty:''}`:'当前数值尚未确认。先在左侧调整并保存状态，再刷新推荐。';
+ const form=document.querySelector('#chat-form'),input=document.querySelector('#chat-input'),list=document.querySelector('#chat-messages'),status=document.querySelector('#chat-status');
+ const newButton=document.querySelector('#chat-new'),freeButton=document.querySelector('#chat-free'),include=document.querySelector('#chat-include-tasks');
+ const key='adventure-assistant-v3';let owner=null,target=null,turns=[],pending=null,busy=false,ready=false,storageAvailable=true;
+ async function api(url,method='GET',data){const response=await fetch(url,{method,headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined});const value=await response.json();if(!response.ok){const error=Error(value.error||'对话暂不可用，请稍后重试');error.code=value.code;error.status=response.status;throw error;}return value;}
+ function el(tag,text,cls){const node=document.createElement(tag);node.textContent=text;if(cls)node.className=cls;return node;}
+ function save(){try{sessionStorage.setItem(key,JSON.stringify({owner_id:owner,target,turns:turns.slice(-12),pending,include_tasks:include.checked}));}catch(_){storageAvailable=false;status.textContent='标签页存储不可用，对话暂存于当前页面，刷新将清空。';}}
+ function clear(){try{sessionStorage.removeItem(key);}catch(_){}turns=[];pending=null;list.replaceChildren();}
+ function controls(){input.disabled=busy||!ready;form.querySelector('button').disabled=busy||!ready;include.disabled=busy;newButton.disabled=busy||!owner;freeButton.disabled=busy||!owner;}
+ function mode(){document.querySelector('#chat-mode').textContent=target?'主副本拆解':'自由对话';freeButton.hidden=!target;const box=document.querySelector('#chat-target');box.replaceChildren();box.hidden=!target;if(target){box.append(el('strong','正在拆解：'+target.title),el('p',target.description||'尚无任务描述'));const link=el('a','返回原任务');link.href=target.href;box.append(link);}}
+ function formatted(reply){let text=reply.reply;for(const [name,label] of [['understanding','任务理解'],['completed','目前已完成'],['today_goal','本次目标']])if(reply[name])text+='\n'+label+'：'+reply[name];if(reply.steps?.length)text+='\n'+reply.steps.map((step,i)=>`${i+1}. ${step.title}\n${step.detail}\n完成标志：${step.done_when}（约${step.minutes}分钟，估计）`).join('\n');if(reply.minimum_action)text+='\n最小启动动作：'+reply.minimum_action;return text;}
+ function render(){list.replaceChildren();for(const turn of turns){const row=el('article','','chat-turn');row.append(el('p','你：'+turn.message,'chat-user'),el('p',turn.reply,'chat-answer'));if(turn.response?.steps?.length){const copy=el('button','复制步骤','button secondary');copy.type='button';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(turn.response.steps.map((s,i)=>`${i+1}. ${s.title}\n${s.detail}\n完成标志：${s.done_when}`).join('\n\n'));status.textContent='步骤已复制，可在左侧手动新增事情。';}catch(_){status.textContent='复制不可用，可直接选中回复文字复制。';}});row.append(copy);}list.append(row);}if(turns.length)list.scrollTop=list.scrollHeight;}
+ function history(){const result=turns.slice(-6).map(turn=>({message:turn.message,reply:turn.reply.slice(0,5000)}));while(result.length&&JSON.stringify(result).length>10000)result.shift();return result;}
+ async function send(message=input.value.trim(),requestId=null){
+  if(busy||!ready||!message)return;busy=true;controls();status.textContent=target?'正在理解任务和你的反馈……':'正在回复……';
+  if(!pending||pending.message!==message)pending={request_id:requestId||crypto.randomUUID(),owner_id:owner,mode:target?'breakdown':'free',task_type:target?.kind||null,task_id:target?.id||null,message,history:history(),state:window.startupState?.pressure===undefined?null:{pressure:window.startupState.pressure,energy:window.startupState.energy},include_tasks:include.checked};
+  save();
+  try{const data=await api('/api/startup/chat/messages','POST',pending);const reply=data.response;turns.push({message,reply:formatted(reply),response:reply});turns=turns.slice(-12);pending=null;input.value='';save();render();status.textContent=reply.needs_clarification?'可以补充这些信息，我们再继续。':'可以继续反馈，或手动复制建议步骤。';}
+  catch(error){status.textContent=error.code==='request_used'?'这次发送已处理，未重复调用模型。若回复因网络丢失，可重新描述后明确发送。':error.message;if(error.status)pending=null;if(error.status===401||error.code==='owner_changed'){clear();ready=false;}save();}
+  finally{busy=false;controls();}
  }
- function renderSelected(item){
-  selectedBox.replaceChildren();
-  const title=element('strong',(item.kind==='quest'?'主线 · ':'副本 · ')+(item.title||item.keyword));
-  const recommendation=item.recommendation||item;
-  const reason=recommendation.stale?'推荐已过期，请刷新':recommendation.analysis_status==='pending'?'任务待分析':recommendation.reason||'尚无当前推荐评价';
-  selectedBox.append(title,element('p','所属主线：'+(item.main_quest||'独立副本')),element('p',reason));
-  const link=element('a','查看任务详情');link.href=item.href;selectedBox.append(link);
-  clearButton.hidden=false;breakdownButton.hidden=false;
- }
- async function chooseTask(key,item=null,persist=false){
-  if(key&&!/^(quest|task):[0-9a-fA-F-]{36}$/.test(key))return;
-  const seq=++selectionVersion;selectedKey=key;selectionDirty=persist;
-  const url=new URL(location.href);url.searchParams.delete('coach_type');url.searchParams.delete('coach_id');
-  if(key){const [kind,id]=key.split(':');url.searchParams.set('coach_type',kind);url.searchParams.set('coach_id',id);}
-  window.history.replaceState(null,'',url);
-  clearButton.hidden=!key;breakdownButton.hidden=!key;
-  if(!key)selectedBox.textContent='尚未选择任务。可从主线或副本页面进入拆解。';
-  else if(item)renderSelected(item);
-  else{
-   selectedBox.textContent='正在读取任务……';
-   try{const [kind,id]=key.split(':');const data=await api('/api/startup/target?'+new URLSearchParams({task_type:kind,task_id:id}));if(seq===selectionVersion)renderSelected(data);}
-   catch(e){if(seq===selectionVersion){selectedBox.textContent='所选任务已不可用，请重新选择。';breakdownButton.hidden=true;status.textContent=e.message;}}
-  }
-  if(persist&&cid){try{await api('/api/startup/chat/conversations/'+cid+'/selection','PATCH',{selected_target_key:key});if(seq===selectionVersion)selectionDirty=false;}catch(e){if(seq===selectionVersion)status.textContent='任务选择尚未保存：'+e.message;}}
- }
- function row(turn,currentVersion){
-  const box=element('article','', 'chat-turn');box.dataset.turnId=turn.id;
-  box.append(element('small',new Date(turn.created_at).toLocaleString()),element('p','你：'+turn.message,'chat-user'));
-  if(turn.status==='succeeded'&&turn.response){
-   const answer=turn.response;box.append(element('p','AI：'+answer.reply,'chat-answer'));
-   if(answer.barrier)box.append(element('p','可能的阻力：'+answer.barrier,'muted'));
-   if(answer.goal)box.append(element('p','你想达成：'+answer.goal,'muted'));
-   if(answer.ready&&document.querySelector('#state-form')){
-    const quadrant=answer.energy>=50?(answer.pressure<50?'投入区':'降噪区'):(answer.pressure<50?'激活区':'修复区');
-    box.append(element('p',`建议值 · ${quadrant} · 压力 ${answer.pressure} / 能量 ${answer.energy}。${answer.difficulty}`));
-    const confirmed=window.startupState;
-    const same=confirmed?.confirmed&&confirmed.pressure===answer.pressure&&confirmed.energy===answer.energy&&confirmed.difficulty===answer.difficulty;
-    if(same)box.append(element('p','这些数值已确认，无需重复保存。','muted'));
-    else if(turn.sequence===currentVersion){const apply=element('button','载入建议，调整后确认','button secondary');apply.type='button';apply.disabled=busy;
-     apply.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('state-advice',{detail:turn})));box.append(apply);}
-   }
-  }else{const errors={no_model:'请先到灵石区设置默认模型。',rate_limit:'模型正在处理其他请求或调用频繁，请稍后再发送。',invalid_output:'模型返回格式不符合要求，请重新发送。',upstream_timeout:'模型响应超时；本次结果未知，不会自动重发。',interrupted:'请求已中断，请重新发送。'};box.append(element('p',turn.status==='pending'?'等待回复。可稍后重读对话；超过两分钟仍无回复时可重新发送。':(errors[turn.error_code]||'本次模型调用未成功，请检查灵石区配置后重新发送。'),'muted'));}
-  return box;
- }
- async function loadHistory(older=false){
-  if(!cid)return;const target=cid,seq=++reading;
-  const data=await api('/api/startup/chat/conversations/'+cid+(older&&before?'?before='+before:''));
-  if(cid!==target||seq!==reading)return;
-  version=data.version;before=data.next_before;more.hidden=before===null;
-  if(!older&&!selectionDirty&&selectedKey!==(data.selected_target_key||null))chooseTask(data.selected_target_key||null);
-  if(!older)list.replaceChildren();
-  const fragment=document.createDocumentFragment();data.items.forEach(t=>fragment.append(row(t,data.version)));
-  if(older)list.prepend(fragment);else list.append(fragment);
- }
- async function conversations(append=false){
-  const data=await api('/api/startup/chat/conversations?offset='+(append?chatOffset||0:0));
-  if(!append)select.replaceChildren(element('option','新的状态对话'));
-  select.options[0].value='';
-  for(const item of data.items){const option=element('option',item.title);option.value=item.id;select.append(option);}
-  chatOffset=data.next_offset;moreChats.hidden=chatOffset===null;
-  if(cid&&!Array.from(select.options).some(x=>x.value===cid)){const option=element('option','当前对话');option.value=cid;select.append(option);}
-  select.value=cid||'';return data.items;
- }
- function reset(){++reading;cid=null;version=0;pending=null;before=null;select.value='';list.replaceChildren();more.hidden=true;status.textContent='新的状态对话。';chooseTask(null);}
- newButton.addEventListener('click',reset);
- select.addEventListener('change',async()=>{if(!select.value){reset();return;}++reading;cid=select.value;pending=null;selectionDirty=false;list.replaceChildren();busy=true;controls();try{await loadHistory();status.textContent='已载入对话历史。';}catch(e){status.textContent=e.message;}finally{busy=false;controls();list.querySelectorAll('button').forEach(x=>x.disabled=false);}});
- more.addEventListener('click',()=>loadHistory(true).catch(e=>status.textContent=e.message));
- moreChats.addEventListener('click',()=>conversations(true).catch(e=>status.textContent=e.message));
- form.addEventListener('submit',async event=>{
-  event.preventDefault();if(busy||!input.value.trim())return;
-  busy=true;controls();list.querySelectorAll('button').forEach(x=>x.disabled=true);status.textContent='正在理解你的描述……';
-  if(!pending||pending.message!==input.value.trim()||pending.selected_target_key!==selectedKey)pending={request_id:crypto.randomUUID(),conversation_id:cid,expected_version:version,message:input.value.trim(),selected_target_key:selectedKey};
+ form.addEventListener('submit',event=>{event.preventDefault();send();});
+ newButton.addEventListener('click',()=>{if((turns.length||pending||input.value.trim())&&!confirm('清空当前对话并重新开始？'))return;clear();input.value='';save();status.textContent='已开始新对话。';});
+ freeButton.addEventListener('click',()=>{if(turns.length&&!confirm('结束当前拆解对话，返回自由对话？'))return;clear();target=null;ready=true;input.value='';const url=new URL(location.href);for(const name of ['task_type','task_id','generate'])url.searchParams.delete(name);window.history.replaceState(null,'',url);mode();save();controls();status.textContent='已返回自由对话。';});
+ include.addEventListener('change',save);
+ async function init(){
+  controls();const params=new URLSearchParams(location.search),requested=params.has('task_type')||params.has('task_id');
+  const query=requested?'?'+new URLSearchParams({task_type:params.get('task_type')||'',task_id:params.get('task_id')||''}):'';
   try{
-   const turn=await api('/api/startup/chat/messages','POST',pending);cid=turn.conversation_id;version=turn.sequence;pending=null;selectionDirty=false;
-   if(turn.status==='succeeded')input.value='';
-   await conversations();await loadHistory();
-   status.textContent=turn.status==='succeeded'?'建议已保存到对话中，当前状态还没有改变。':turn.status==='pending'?'请求仍在处理中，请稍后重读历史。':'本次没有获得建议，消息已保存。可重新发送。';
-  }catch(e){status.textContent=e.message;if(e.status){pending=null;if(cid)await loadHistory().catch(()=>{});}}
-  finally{busy=false;controls();list.querySelectorAll('button').forEach(x=>x.disabled=false);}
- });
- async function refreshHistory(){if(cid&&!busy)await loadHistory();}
- window.addEventListener('focus',()=>refreshHistory().catch(()=>{}));
- setInterval(()=>{if(!document.hidden)refreshHistory().catch(()=>{});},15000);
- let stateOffset=null,stateRead=0;
- const history=document.querySelector('#state-history'),historyMore=document.querySelector('#state-history-more');
- async function states(append=false){if(!history)return;const seq=++stateRead;try{const data=await api('/api/startup/history?offset='+(append?stateOffset||0:0));if(seq!==stateRead)return;if(!append)history.replaceChildren();for(const item of data.items)history.append(element('p',`${new Date(item.created_at).toLocaleString()} · ${item.quadrant} · 压力 ${item.pressure} / 能量 ${item.energy} · ${(item.source_turn_id||item.source_plan_id)?'AI 建议经你确认':'手动确认'}${item.difficulty?' · '+item.difficulty:''}`));if(!data.items.length&&!append)history.append(element('p','还没有状态记录。'));stateOffset=data.next_offset;historyMore.hidden=stateOffset===null;}catch(e){if(seq===stateRead&&!append)history.textContent=e.message;}}
- historyMore?.addEventListener('click',()=>states(true));window.addEventListener('state-saved',()=>{states();refreshHistory().catch(()=>{});});
- window.addEventListener('state-readiness',renderState);renderState();
- window.addEventListener('coach-select-task',event=>{if(busy){status.textContent='请等当前对话结束后选择任务。';return;}chooseTask(event.detail.key,event.detail,true);document.querySelector('#chat').scrollIntoView({behavior:'smooth',block:'start'});});
- clearButton.addEventListener('click',()=>chooseTask(null,null,true));
- breakdownButton.addEventListener('click',()=>{if(!selectedKey)return;const [kind,id]=selectedKey.split(':');location.assign('/startup?'+new URLSearchParams({task_type:kind,task_id:id,generate:crypto.randomUUID()}));});
- window.addEventListener('recommendations-view',event=>{
-  const target=document.querySelector('#chat-top-tasks'),data=event.detail;if(!target)return;target.replaceChildren();target.dataset.batchId=data.batch_id||'';recommendationItems=data.items||[];
-  const current=recommendationItems.find(x=>x.key===selectedKey);if(current)renderSelected(current);
-  const selected=(data.items||[]).filter(x=>!x.stale&&x.level==='green').slice(0,3);
-  if(!selected.length){target.append(element('p',data.items?.length?'当前没有绿色推荐。可以休息、调整状态，或自主选择其他任务。':data.message||'确认状态并刷新象限后，这里将显示建议。'));return;}
-  for(const item of selected){const block=element('p',''),link=element('a',item.keyword);link.href=item.href;const choose=element('button','讨论','button secondary');choose.type='button';choose.addEventListener('click',()=>chooseTask(item.key,item,true));block.append(link,element('span',' · '+item.reason),choose);target.append(block);}
- });
- async function init(){controls();if(selectedKey)chooseTask(selectedKey,null,true);try{const items=await conversations();if(items.length){cid=items[0].id;select.value=cid;await loadHistory();if(selectionDirty){await api('/api/startup/chat/conversations/'+cid+'/selection','PATCH',{selected_target_key:selectedKey});selectionDirty=false;}}}catch(e){status.textContent=e.message;}finally{busy=false;controls();list.querySelectorAll('button').forEach(x=>x.disabled=false);}}
- init();states();
+   const data=await api('/api/startup/chat/context'+query);owner=data.owner_id;
+   let stored=null;try{stored=JSON.parse(sessionStorage.getItem(key)||'null');}catch(_){}
+   if(stored?.owner_id!==owner){clear();stored=null;}
+   target=data.target;
+   if(!requested&&stored?.target){const restored=await api('/api/startup/chat/context?'+new URLSearchParams({task_type:stored.target.kind,task_id:stored.target.id}));target=restored.target;}
+   const sameTarget=(!target&&!stored?.target)||(target&&target.id===stored?.target?.id&&target.kind===stored?.target?.kind);
+   if(stored&&sameTarget){turns=Array.isArray(stored.turns)?stored.turns.slice(-12).filter(t=>typeof t.message==='string'&&typeof t.reply==='string'):[];pending=stored.pending||null;include.checked=stored.include_tasks===true;}
+   ready=true;mode();render();save();controls();
+   if(pending){input.value=pending.message;status.textContent='上次发送结果未知，可点击发送使用同一编号重试；不会自动重发模型。';}
+   const nonce=params.get('generate');if(nonce){const url=new URL(location.href);url.searchParams.delete('generate');window.history.replaceState(null,'',url);}
+   if(target&&nonce&&!turns.length&&!pending){await send('请结合这个任务的已有描述和进展，帮助我找到今天容易开始的下一步；若缺少关键信息，请先问我。',/^[0-9a-f-]{36}$/i.test(nonce)?nonce:null);}
+  }catch(error){
+   status.textContent=error.message;ready=false;
+   if([404,409,422].includes(error.status)){try{const basic=await api('/api/startup/chat/context');owner=basic.owner_id;clear();target=null;ready=true;save();status.textContent=error.message+'；已返回自由对话。';const url=new URL(location.href);for(const name of ['task_type','task_id','generate'])url.searchParams.delete(name);window.history.replaceState(null,'',url);}catch(_){clear();}}
+   if(error.status===401)clear();mode();controls();
+  }
+ }
+ init();
 })();

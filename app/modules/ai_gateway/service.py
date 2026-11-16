@@ -148,7 +148,7 @@ class AIService:
     def __init__(self,database,settings):
         self.database,self.settings=database,settings
 
-    def generate(self,user_id,purpose,messages,request_id,output_schema=None,config_id=None,expected_version=None):
+    def generate(self,user_id,purpose,messages,request_id,output_schema=None,config_id=None,expected_version=None,json_mode=False,timeout_seconds=60):
         if purpose not in PURPOSES or not isinstance(request_id,UUID):
             raise AIError('invalid_request','用途或提交编号无效',422)
         if (not isinstance(messages,list) or not 1<=len(messages)<=30
@@ -187,7 +187,8 @@ class AIService:
             log_id,version,url,model=log.id,config.config_version,config.base_url,config.model_id
         error=None; content=None; usage=None
         try:
-            content,usage=OpenAICompatibleAdapter(post_json).generate(url,key,model,messages,output_schema,max_tokens=1536 if purpose in {'breakdown','task_analysis','startup_state'} else 512)
+            transport=post_json if timeout_seconds==60 else lambda *args:post_json(*args,timeout_seconds=timeout_seconds)
+            content,usage=OpenAICompatibleAdapter(transport).generate(url,key,model,messages,output_schema,max_tokens=1536 if purpose in {'breakdown','task_analysis','startup_state'} else 512,json_mode=json_mode)
         except AIError as exc:
             error=exc
         except Exception:

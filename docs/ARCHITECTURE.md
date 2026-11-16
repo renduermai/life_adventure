@@ -1,5 +1,7 @@
 # 总体架构
 
+V3第5步新增session_service/router/schemas，复用原拆解的Step合同、结构化模型调用及owner-scoped target_context，替换右侧旧页面。GET /api/startup/chat/context返回当前账号/可选真实目标；POST /api/startup/chat/messages接收owner_id、模式、最多6轮有界上下文及当前压力能量。服务端重新验证目标归属，默认不读取其他任务摘要；用户勾选后才发送有效任务摘要。自由模式自然文本，拆解模式JSON对象及Pydantic校验，服务端不保存聊天正文、不写正式任务或独立事项。
+
 V3第4步新增startup_items.analysis及item_analysis.js。前端读取全部有效独立事项分页数据，按用户明确点击依次POST /api/startup/items/{id}/analyze。每项短事务预留请求，事务外AIService(task_analysis)调用，再复查请求、四字段指纹和模型配置后独立提交。模型只读取事项ID与描述/重要/紧急/进展，不接主副本或当前压力能量；错误ID拒绝发布。无任务队列、无自动重发未知模型结果。GET仅读取持久化结果，不调用模型。内容过期保留旧结果但不绘点，部分失败不撤回其他成功项。
 
 V3第2步新增startup_items模块（models/schemas/service/router），通过/api/startup/items的列表、读取、POST新增、PATCH编辑和DELETE软删除为页面提供独立事项。全部查询按用户过滤；写入持用户锁，编辑/删除核对expected_version；新增使用请求UUID和内容指纹避免重试重复。前端只用textContent展示事项，保存失败保留草稿。沿用原导出入口，新增表纳入用户数据导出。

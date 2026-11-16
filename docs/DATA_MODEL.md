@@ -1,5 +1,7 @@
 # 数据模型草案
 
+V3第5步无迁移。新会话不写startup_conversations、startup_chat_turns或breakdown_plans；仅浏览器标签页保存最多12轮显示、发送最多6轮/12000字符上下文，API Key始终只在服务端。owner_id与当前登录UID复核，防止换账号后发送旧上下文。历史聊天/方案及关联外键保留，不删除旧记录。
+
 0017_item_analysis仅向startup_items增加可空analysis_result(JSON)、analysis_fingerprint、analysis_config、analysis_error、analysis_attempt_id、analysis_attempt_fingerprint、analysis_attempt_status与analysis_started_at。分析写入不递增事项内容version；缓存指纹只含四项输入，模型配置签名含协议提示版本item-v1。最后成功结果与最近尝试分离保存，失败不覆盖成功JSON。描述/重要/紧急/进展变化即显示过期，滑杆变化不影响缓存。无旧表/历史数据删除，沿用导出按模型列自动包含分析字段。
 
 0016_startup_items仅新增startup_items表与用户索引：id、user_id、description(1–2000)、importance/urgency(0–100整数)、progress(0–2000)、version、创建请求UUID/指纹、创建更新时间及deleted_at。唯一外键指向users，不关联主线、副本、奖励或旧AI推荐。软删除只隐藏记录；未建回收站UI。没有分析字段，第4步另行设计。历史表及数据均保留。

@@ -125,7 +125,9 @@ class PinnedHTTPS(http.client.HTTPSConnection):
             raise
 
 
-def post_json(url, key, payload):
+def post_json(url, key, payload, *, timeout_seconds=60):
+    if timeout_seconds not in (60, 90):
+        raise ValueError("Unsupported request budget")
     target = urlsplit(base_url(url))
     started = time.monotonic()
     addresses = resolve(target.hostname)
@@ -134,7 +136,7 @@ def post_json(url, key, payload):
     connection = PinnedHTTPS(target.hostname, addresses[0], timeout=10)
     # A timer closes this one connection, including slow response headers/body.
     from threading import Timer
-    timer = Timer(max(0.01, 60 - (time.monotonic() - started)), connection.close)
+    timer = Timer(max(0.01, timeout_seconds - (time.monotonic() - started)), connection.close)
     timer.daemon = True
     try:
         timer.start()
@@ -144,7 +146,7 @@ def post_json(url, key, payload):
                                'Accept': 'application/json', 'Accept-Encoding': 'identity'})
         # Connecting is bounded by 10s; generation may use the remaining total
         # deadline. Non-streaming providers often send headers only after generation.
-        remaining = 60 - (time.monotonic() - started)
+        remaining = timeout_seconds - (time.monotonic() - started)
         if remaining <= 0:
             raise TimeoutError()
         if connection.sock is not None:
@@ -155,10 +157,10 @@ def post_json(url, key, payload):
             raise AIError(code, '供应商拒绝请求，请检查模型、凭据或额度', 502)
         chunks = bytearray()
         while True:
-            if time.monotonic() - started >= 60:
+            if time.monotonic() - started >= timeout_seconds:
                 raise TimeoutError()
             if connection.sock is not None:
-                connection.sock.settimeout(max(.01, 60 - (time.monotonic() - started)))
+                connection.sock.settimeout(max(.01, timeout_seconds - (time.monotonic() - started)))
             block = response.read1(min(65536, 1048577 - len(chunks)))
             if not block:
                 break

@@ -26,6 +26,8 @@ def run():
         path = request.url.split('8769')[1].split('?')[0]
         if path == '/api/startup/current':
             result = {'generation': 0, 'state': None}
+        elif path == '/api/startup/chat/context':
+            result = {'owner_id':'00000000-0000-0000-0000-000000000001','target':None}
         elif path == '/api/startup/chat/conversations':
             result = {'items': [], 'next_offset': None}
         elif path.startswith('/api/startup/items'):

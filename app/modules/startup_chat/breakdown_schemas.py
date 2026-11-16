@@ -2,17 +2,11 @@ from typing import Literal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, model_validator
 from app.modules.startup_chat.schemas import StateAdvice
+from app.modules.startup_chat.planning import Step
 
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
-
-
-class Step(StrictModel):
-    title: str = Field(min_length=1, max_length=160)
-    detail: str = Field(max_length=600)
-    minutes: StrictInt = Field(ge=1, le=240)
-    done_when: str = Field(min_length=1, max_length=200)
 
 
 class Advice(StrictModel):
