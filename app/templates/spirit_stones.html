@@ -4,6 +4,26 @@
 <section class="intro-panel"><h2>灵石区 · AI 能力中心</h2><p class="muted">管理你的模型入口。连接测试会发送一条简短测试消息，可能产生费用。</p><button id="ai-new" class="button primary" type="button">＋ 添加 API 入口</button></section>
 <p id="ai-message" class="notice" role="status" aria-live="polite" hidden></p>
 <div class="section-heading"><h2>我的模型</h2></div><div id="ai-list" class="ai-grid"><p class="muted">正在加载……</p></div>
+<div class="section-heading"><h2>Supabase 云端服务</h2></div>
+<div class="ai-grid"><article id="supabase-card" class="card form-card ai-card">
+<h3>Supabase</h3><p class="muted">服务类型：数据库 / 图片存储</p>
+<p id="supabase-status" class="muted">正在读取配置……</p>
+<div class="form-row"><button id="supabase-open" class="button secondary" type="button" aria-expanded="false" aria-controls="supabase-detail">查看配置</button><a id="supabase-dashboard" class="button secondary" href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard ↗</a></div>
+</article></div>
+<section id="supabase-detail" class="card form-card" hidden aria-labelledby="supabase-title">
+<h2 id="supabase-title" tabindex="-1">Supabase 配置详情</h2>
+<div class="form-stack">
+<label>Project URL<input id="supabase-project-url" readonly value="未配置"></label>
+<div><button id="supabase-copy-url" class="button secondary" type="button" disabled>复制 Project URL</button></div>
+<label>API Key<input id="supabase-public-key" readonly value="未配置"></label>
+<div><button id="supabase-copy-key" class="button secondary" type="button" disabled>复制公开 API Key</button></div>
+<p>服务端密钥：<span id="supabase-server-key">未配置</span></p>
+<p>图片存储桶：<span id="supabase-bucket">未配置</span></p>
+<p>控制台网址：<a id="supabase-dashboard-detail" href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard ↗</a></p>
+<p class="muted">此处只查看现有配置；配置状态不代表实时连通性。服务端密钥仅显示是否配置。</p>
+<p id="supabase-message" class="notice" role="status" aria-live="polite"></p>
+<div><button id="supabase-close" class="button secondary" type="button">收起详情</button></div>
+</div></section>
 <section id="ai-editor" class="card form-card" hidden><h2 id="ai-editor-title">添加 API 入口</h2><form id="ai-form" class="form-stack">
 <label>自定义名称<input name="name" maxlength="80" required></label>
 <label>Base URL<input name="base_url" type="url" maxlength="500" placeholder="https://…/v1" required></label>

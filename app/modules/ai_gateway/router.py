@@ -1,5 +1,8 @@
 """Authenticated JSON endpoints; no AI settings page in V2 step 2."""
 import json
+import base64
+import re
+from urllib.parse import urlsplit
 from uuid import UUID
 from fastapi import APIRouter, Request
 from fastapi.encoders import jsonable_encoder
@@ -47,6 +50,66 @@ async def body(request,schema):
 
 def error_response(request,error):
     return response({'error':str(error),'code':error.code,'request_id':request.state.request_id},error.status)
+
+
+def supabase_display(settings):
+    """Allowlist display values only; never serialize Settings or server credentials."""
+    def secret(name):
+        value=getattr(settings,name,None)
+        return value.get_secret_value().strip() if value else ''
+    server_keys=[secret('supabase_secret_key'),secret('supabase_service_role_key')]
+    public_key=None;kind=None
+    for name in ('supabase_publishable_key','supabase_anon_key'):
+        value=secret(name)
+        if not value or value in server_keys or len(value)>8192:continue
+        valid=bool(re.fullmatch(r'sb_publishable_[A-Za-z0-9_-]+',value))
+        if not valid and re.fullmatch(r'[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+',value):
+            try:
+                segment=value.split('.')[1]
+                payload=json.loads(base64.urlsafe_b64decode(segment+'='*(-len(segment)%4)))
+                # A role check prevents accidental service_role exposure; this is not JWT authentication.
+                valid=isinstance(payload,dict) and payload.get('role')=='anon'
+            except (ValueError,TypeError,UnicodeError):pass
+        if valid:public_key=value;kind='Publishable Key' if value.startswith('sb_publishable_') else 'anon Key';break
+    raw_url=(settings.supabase_url or '').strip();project_url=None;dashboard='https://supabase.com/dashboard'
+    try:
+        parsed=urlsplit(raw_url)
+        if (parsed.scheme=='https' and parsed.hostname and not parsed.username and not parsed.password
+                and parsed.path in ('','/') and not parsed.query and not parsed.fragment and parsed.port in (None,443)):
+            project_url='https://'+parsed.netloc.rstrip('/')
+            match=re.fullmatch(r'([a-z]{20})\.supabase\.co',parsed.hostname)
+            if match:dashboard+='/'+'project/'+match.group(1)
+    except ValueError:pass
+    server_configured=any(server_keys)
+    bucket_configured=bool((settings.supabase_storage_bucket or '').strip())
+    metadata={'name':'Supabase','service_type':'数据库 / 图片存储',
+        'configured':bool(project_url and server_configured and bucket_configured),
+        'project_url':project_url,'project_url_configured':bool(raw_url),'dashboard_url':dashboard,
+        'public_key_configured':bool(public_key),'public_key_type':kind,
+        'public_key_invalid':bool(not public_key and (secret('supabase_publishable_key') or secret('supabase_anon_key'))),
+        'public_key_masked':'••••••••' if public_key else None,'server_key_configured':server_configured,
+        'storage_bucket_configured':bucket_configured}
+    return metadata,public_key
+
+
+@router.get('/supabase')
+def supabase_config(request:Request):
+    try:
+        user_id(request)
+        metadata,_=supabase_display(request.app.state.settings)
+        return JSONResponse(metadata,headers={'Cache-Control':'no-store','Vary':'Cookie'})
+    except AIError as error:return error_response(request,error)
+
+
+@router.post('/supabase/public-key/copy')
+def supabase_public_key(request:Request):
+    same_origin(request)
+    try:
+        user_id(request)
+        _,key=supabase_display(request.app.state.settings)
+        if not key:raise AIError('public_key_unavailable','未配置可公开使用的Publishable/anon Key',409)
+        return JSONResponse({'public_key':key},headers={'Cache-Control':'no-store','Vary':'Cookie'})
+    except AIError as error:return error_response(request,error)
 
 
 @router.get('/configs')

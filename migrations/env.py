@@ -26,6 +26,11 @@ from app.modules.startup_items import models as item_models  # noqa: F401
 from app.modules.distractions import models as distraction_models  # noqa: F401
 
 from app.modules.library import models as library_models  # noqa: F401
+from app.modules.shining_memories.shared import models as memory_models  # noqa: F401
+from app.modules.shining_memories.people import models as people_models  # noqa: F401
+from app.modules.shining_memories.people import analysis_models as person_analysis_models  # noqa: F401
+from app.modules.shining_memories.items import models as memory_items_models  # noqa: F401
+from app.modules.shining_memories.wishes import models as memory_wishes_models  # noqa: F401
 
 config = context.config
 

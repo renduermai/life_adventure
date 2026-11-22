@@ -1,0 +1,18 @@
+<script src="{{ url_for('static', path='js/memory_people.js') }}" defer></script>
+<script src="{{ url_for('static', path='js/memory_person_analysis.js') }}" defer></script>
+<p id="people-message" role="status" aria-live="polite"></p>
+<div class="memory-people-layout">
+<section class="card memory-panel"><div class="memory-toolbar"><h2>精神导师</h2><button type="button" class="button primary" id="person-new">＋ 添加人物</button><button type="button" class="button secondary" id="people-reload">重新读取</button></div><p class="muted">联系热度只代表时间新鲜度，不代表感情深浅。</p><div id="people-list"><p class="muted">正在读取…</p></div><button id="people-more" class="button secondary" hidden>加载更多人物</button></section>
+<aside class="card memory-panel" id="person-detail"><p class="muted">选择一位人物，查看经历与分析。</p></aside>
+</div>
+<section class="card memory-panel" id="person-editor" hidden><h3 id="person-editor-title">添加人物</h3>
+<form id="person-form" class="form-stack">
+<label>人物姓名<input name="name" maxlength="120" required></label>
+<label>与我的关系<input name="relationship" maxlength="120" required></label>
+<label>我们的珍贵时刻<textarea name="precious_moments" maxlength="8000" rows="4"></textarea></label>
+<label>手动记录的最近联系日期<input name="manual_contact_date" type="date"></label><small class="muted">不记得可留空；有效实际联系事件也会参与计算。</small>
+<label>是否愿意主动联系<select name="contact_preference"><option value="unspecified">尚未选择</option><option value="willing">愿意</option><option value="hesitant">犹豫</option><option value="no_contact">暂不考虑</option></select></label>
+<label>备注<textarea name="notes" maxlength="2000" rows="2"></textarea></label>
+<p id="person-form-message" role="status"></p><div><button type="submit" class="button primary">保存人物</button><button type="button" class="button secondary" id="person-cancel">取消</button></div></form></section>
+<section class="card memory-panel" id="person-events" hidden><h3>人物事件时间线</h3><div id="event-list"></div><button id="events-more" class="button secondary" hidden>加载更多事件</button>
+<h4 id="event-editor-title">记录新事件</h4><form id="event-form" class="form-stack"><label>事件日期<input name="event_date" type="date" required></label><label>事件描述<textarea name="content" rows="3" maxlength="5000" required></textarea></label><label><input name="is_actual_contact" type="checkbox"> 这是一次实际联系</label><small class="muted">未勾选表示回忆，不更新联系热度。</small><p id="event-form-message" role="status"></p><div><button class="button primary" type="submit">保存事件</button><button id="event-cancel" type="button" class="button secondary">清空 / 取消编辑</button></div></form></section>

@@ -1,5 +1,17 @@
 # 数据模型
 
+0027_item_entitlements仅新增memory_items.is_entitlement Boolean NOT NULL DEFAULT false与expires_at Date NULL；CHECK要求权益日期非空且>=purchase_date，普通日期为空。旧记录false/null。剩余天数按用户时区读取计算，不入库，原成本字段和公式不变。见[实施记录](ITEM_ENTITLEMENTS.md)。
+
+人物分析最小修复无表结构变更，仍为0026。新生成结果保持原字段结构，历史宽Schema继续可读；现有ai_call_logs.usage JSON增加人物专属脱敏数字诊断，包括截断用量。无正式人物、任务、事件或杂念原文数据迁移。
+
+0026_memory_wishes新增memory_wishes、memory_wish_prices、memory_wish_classifications。价格历史kind为initial/update/correction，保留previous_price和纠正原因；请求幂等、用户复合FK。当前价和纠正后首价由事务维护，原历史不覆盖；分类失败与成功记录独立。
+
+0025_memory_items新增memory_items：user_id、名称、购买日期、Numeric(14,2) CNY价格、自由类别、可空image_asset_id、版本、幂等创建编号和软删除；图片复合FK同用户且每资产唯一。
+
+0023_memory_people新增memory_people、memory_person_events：用户归属、版本和软删除，人物手填联系日期独立于事件最新实际联系日期；事件分真实联系/回忆。0024_person_analysis新增memory_person_analyses：用户/人物复合FK、请求幂等编号、授权范围、输入指纹、状态与错误码、结构化结果和评分规则版本。失败不删除旧成功分析。精确热度和分数由Python计算，不存AI随意返回的数字。
+
+0022_memory_assets新增memory_assets与memory_asset_objects。稳定资产含user_id、版本、幂等创建编号、软删除；不可变对象含资产归属复合FK、Bucket/相对对象路径、SHA-256、尺寸与pending/active/retired/deleted状态、清理时间及脱敏错误码。唯一部分索引限定每资产一个active。数据库不存图片二进制、Windows路径和原文件名。其余三类业务表未提前创建。
+
 ## 藏经阁0021_library_copies
 
 library_links增加(id,user_id)唯一约束，library_copy_receipts以(user_id,request_id)主键保存link_id及创建时间，复合FK限定同用户链接。只保存复制操作ID，不存剪贴板内容。凭据与原子计数在同一事务，锁用户串行化重试检查，SQL执行click_count=click_count+1。失败不留半次计数。

@@ -15,9 +15,12 @@
     <a class="brand" href="/" aria-label="人生冒险之旅首页"><span class="brand-mark">△</span><span>人生冒险之旅<small>ADVENTURE CAMP</small></span></a>
     <div class="nav-label">我的营地</div>
     <nav>
-      {% for key, item in pages.items() %}
+      {% for key, item in pages.items() if key != 'data' %}
       <a class="nav-item {% if page == key %}active{% endif %}" href="{{ '/' if key == 'camp' else '/' ~ key }}" {% if page == key %}aria-current="page"{% endif %}><span aria-hidden="true">{{ item.symbol }}</span>{{ item.title }}</a>
       {% endfor %}
+      {% if 'data' in pages %}{% set item = pages['data'] %}
+      <a class="nav-item {% if page == 'data' %}active{% endif %}" href="/data" {% if page == 'data' %}aria-current="page"{% endif %}><span aria-hidden="true">{{ item.symbol }}</span>{{ item.title }}</a>
+      {% endif %}
     </nav>
     <div class="nav-label future-label">未来的冒险</div>
     <div class="future-item">飞轮祭坛 <span>阶段 2</span></div>

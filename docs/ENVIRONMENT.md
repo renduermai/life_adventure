@@ -4,10 +4,12 @@
 
 已实测 Windows、CPython 3.11.9、pip 24.0。macOS 尚未实测。使用项目 .venv，不升级系统 Python 或安装全局包。
 
-- [requirements.txt](../requirements.txt)：8 个直接运行依赖。
+- [requirements.txt](../requirements.txt)：直接运行依赖（数量以文件为准）。
 - [requirements-dev.txt](../requirements-dev.txt)：运行依赖与 pytest、httpx 两个测试工具。
-- [constraints.txt](../constraints.txt)：23 个传递依赖版本约束；全量开发环境共 33 个包，不含 pip/setuptools。
+- [constraints.txt](../constraints.txt)：传递依赖版本约束；实际安装清单以pip check及安装结果为准。
 - `.python-version` 记录本地验证版本，不自动安装解释器。未来生产部署前复核解释器与安全补丁。
+
+完整pytest收集需要Playwright（即使数据库浏览器测试默认跳过），requirements-browser.txt已包含开发依赖；仅运行网站可只装requirements.txt。
 
 ## Windows
 
@@ -17,6 +19,7 @@
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip --isolated install --index-url https://pypi.org/simple -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m pip --isolated install --index-url https://pypi.org/simple -r requirements-browser.txt
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log
 ```

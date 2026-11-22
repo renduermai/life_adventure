@@ -1,5 +1,19 @@
 # 总体架构
 
+灵石区Supabase展示复用卡片样式和登录校验；新增安全摘要GET及同源公开Key复制POST。仅新增配置字段识别，不改变现有Storage/数据库连接。服务端密钥永不进入浏览器，普通摘要不含完整公开Key；无持久化新表、编辑配置或外部请求。详见[只读展示](SUPABASE_DISPLAY.md)。
+
+人物分析沿用现有Gateway：紧凑生成Schema与历史读取Schema兼容，输出预算/显式关闭当前百炼DeepSeek思考均按purpose限定。响应诊断仅存数字/枚举，截断不写入成功结果。无架构重构，见[修复说明](PERSON_ANALYSIS_MINIMAL_FIX.md)。
+
+闪光的回忆第7步核心联调已完成，真实云图片/独立恢复待配置，不能标记整体验收关闭。见[最终验收报告](MEMORY_FINAL_ACCEPTANCE.md)。
+
+心愿单第5步：wishes拆分模型、Schema、业务Service、分类Service和路由；价格/故事由Python处理，分类仅文本通过Gateway，外部I/O在业务事务外。物品与心愿共用图片引用保护。
+
+武器工坊第4步复用shining_memories/items Service与私有media资产；价格/时间与排序为Python Decimal派生值，图片归属使用复合FK。无AI调用。
+
+精神导师第2、3步：shining_memories/people拆分人物事件Service、AI授权上下文/缓存/证据校验和Python评分。主副本及杂念仅按显式选择只读访问；预览指纹包含来源、人物版本、模型版本和提示版本，发布前复核。事件日期与人物手填联系日期是事实，热度/推荐分为派生值；GET不调用模型。
+
+闪光的回忆第1步：shining_memories共享认证和页面；shared/images负责解码与去元数据，storage为私有Supabase REST适配器，service负责资产/对象状态机，backup为流式AES-GCM图片快照。上传先持久化pending再外部I/O，发布检查版本，旧对象保留7天，手动清理与备份共用锁。人物、物品和心愿业务按后续步骤增加，不新建聊天系统。详见[模块说明](SHINING_MEMORIES.md)。
+
 藏经阁第5步：四个真实任务入口、真实Clipboard API、数据库计数及新应用持久化联调通过；切换筛选时清空旧视图，失败只显示错误，防止旧资源归属误导。使用/备份见[LIBRARY.md](LIBRARY.md)。
 
 

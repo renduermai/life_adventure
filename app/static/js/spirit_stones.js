@@ -68,5 +68,44 @@
     catch(error) { show(error.message); }
     finally { busy=false; form.querySelector('button[type="submit"]').disabled=false; }
   });
+  const cloudPanel=document.querySelector('#supabase-detail'),cloudOpen=document.querySelector('#supabase-open');
+  const cloudMessage=document.querySelector('#supabase-message');
+  let cloud=null;
+  document.querySelector('#supabase-card').addEventListener('click',event=>{if(!event.target.closest('button,a'))cloudOpen.click();});
+  cloudOpen.addEventListener('click',()=>{
+    cloudPanel.hidden=!cloudPanel.hidden;cloudOpen.setAttribute('aria-expanded',String(!cloudPanel.hidden));
+    if(!cloudPanel.hidden){cloudPanel.scrollIntoView({behavior:'smooth'});document.querySelector('#supabase-title').focus();}
+    if(!cloud)loadCloud();
+  });
+  document.querySelector('#supabase-close').addEventListener('click',()=>{cloudPanel.hidden=true;cloudOpen.setAttribute('aria-expanded','false');cloudOpen.focus();});
+  async function loadCloud(){
+    try{
+      cloud=await request('/api/ai/supabase');
+      document.querySelector('#supabase-status').textContent=`配置状态：${cloud.configured?'已配置':'未配置'}`;
+      document.querySelector('#supabase-project-url').value=cloud.project_url || (cloud.project_url_configured?'配置地址无效':'未配置');
+      document.querySelector('#supabase-public-key').value=cloud.public_key_configured?`${cloud.public_key_type} · ${cloud.public_key_masked}`:cloud.public_key_invalid?'配置不可用于公开展示':'未配置';
+      document.querySelector('#supabase-server-key').textContent=cloud.server_key_configured?'已配置':'未配置';
+      document.querySelector('#supabase-bucket').textContent=cloud.storage_bucket_configured?'已配置':'未配置';
+      document.querySelector('#supabase-copy-url').disabled=!cloud.project_url;
+      document.querySelector('#supabase-copy-key').disabled=!cloud.public_key_configured;
+      for(const id of ['#supabase-dashboard','#supabase-dashboard-detail'])document.querySelector(id).href=cloud.dashboard_url;
+      cloudMessage.textContent='';
+    }catch(error){cloud=null;document.querySelector('#supabase-status').textContent=error.message;cloudMessage.textContent=error.message+' 点击查看配置可重试。';}
+  }
+  async function copyCloud(kind){
+    const control=document.querySelector(kind==='url'?'#supabase-copy-url':'#supabase-copy-key');control.disabled=true;
+    try{
+      if(!navigator.clipboard?.writeText)throw new Error('当前浏览器不支持剪贴板，请使用本地网址或HTTPS访问。');
+      let value=kind==='url'?cloud?.project_url:null;
+      if(kind==='key')value=(await request('/api/ai/supabase/public-key/copy','POST',{})).public_key;
+      if(!value)throw new Error('此字段未配置。');
+      await navigator.clipboard.writeText(value);value=null;
+      cloudMessage.textContent=kind==='url'?'Project URL 已复制。':'公开 API Key 已复制。';
+    }catch(error){cloudMessage.textContent=error.message;}
+    finally{control.disabled=kind==='url'?!cloud?.project_url:!cloud?.public_key_configured;}
+  }
+  document.querySelector('#supabase-copy-url').addEventListener('click',()=>copyCloud('url'));
+  document.querySelector('#supabase-copy-key').addEventListener('click',()=>copyCloud('key'));
+  loadCloud();
   load();
 })();

@@ -37,6 +37,14 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = None
     migration_database_url: SecretStr | None = None
     ai_encryption_keys: SecretStr | None = None
+    supabase_url: str | None = None
+    supabase_publishable_key: SecretStr | None = None
+    supabase_anon_key: SecretStr | None = None
+    supabase_secret_key: SecretStr | None = None
+    supabase_service_role_key: SecretStr | None = None
+    supabase_storage_bucket: str | None = None
+    memory_backup_dir: Path | None = None
+    memory_backup_key: SecretStr | None = None
 
     @field_validator("database_url", "migration_database_url", mode="before")
     @classmethod

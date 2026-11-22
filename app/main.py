@@ -24,6 +24,7 @@ PAGES = {
     "growth": {"title": "成长与奖励", "subtitle": "让每一步积累被看见。", "symbol": "✦"},
     "data": {"title": "数据与恢复", "subtitle": "导出与找回你的冒险记录。", "symbol": "▣"},
     "library": {"title": "藏经阁", "subtitle": "链接书架", "symbol": "▤"},
+    "shining-memories": {"title": "闪光的回忆", "subtitle": "记住重要的人、物与期待。", "symbol": "✩"},
     "distractions": {"title": "杂念", "subtitle": "思绪记录", "symbol": "✎"},
     "startup": {"title": "启动状态", "subtitle": "先定位此刻，再决定下一步。", "symbol": "◈"},
     "spirit-stones": {"title": "灵石区", "subtitle": "AI 能力中心", "symbol": "◆"},
@@ -73,6 +74,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(distractions_router)
     from app.modules.library.router import router as library_router
     app.include_router(library_router)
+    from app.modules.shining_memories.router import router as memory_router
+    app.include_router(memory_router)
+    from app.modules.shining_memories.people.router import router as people_router
+    app.include_router(people_router)
+    from app.modules.shining_memories.people.analysis_router import router as person_analysis_router
+    app.include_router(person_analysis_router)
+    from app.modules.shining_memories.items.router import router as memory_items_router
+    app.include_router(memory_items_router)
+    from app.modules.shining_memories.wishes.router import router as memory_wishes_router
+    app.include_router(memory_wishes_router)
     from app.modules.startup_chat.session_router import router as chat_router
     app.include_router(chat_router)
     app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")
@@ -134,6 +145,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def library_page(request: Request):
         return templates.TemplateResponse(request=request, name="library.html", context={
             "pages": PAGES, "page": "library", "current": PAGES["library"], "app_name": settings.app_name})
+
+    @app.get('/shining-memories', response_class=HTMLResponse)
+    @app.get('/shining-memories/{section}', response_class=HTMLResponse)
+    def shining_memories(request: Request, section: str = 'people'):
+        from fastapi import HTTPException
+        if section not in {'people', 'items', 'wishes'}:
+            raise HTTPException(404, '页面不存在')
+        return templates.TemplateResponse(request=request, name='shining_memories/page.html', context={
+            'pages': PAGES, 'page': 'shining-memories', 'current': PAGES['shining-memories'],
+            'app_name': settings.app_name, 'section': section})
 
     @app.get("/distractions", response_class=HTMLResponse)
     def distractions(request: Request):

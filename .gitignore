@@ -23,3 +23,22 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Private media archives and restore artifacts
+*.acmedia
+*.acmedia.partial
+var/
+
+# Private data exports, local databases and recovery working directories
+backups/
+private-backups/
+uploads/
+recovery-work/
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.backup
+*.bak
+*.enc
+adventure-camp-export*.zip
