@@ -27,6 +27,7 @@ PAGES = {
     "shining-memories": {"title": "闪光的回忆", "subtitle": "记住重要的人、物与期待。", "symbol": "✩"},
     "distractions": {"title": "杂念", "subtitle": "思绪记录", "symbol": "✎"},
     "startup": {"title": "启动状态", "subtitle": "先定位此刻，再决定下一步。", "symbol": "◈"},
+    "life-os": {"title": "人生运行系统", "subtitle": "先看见此刻，再慢慢找到适合自己的节奏。", "symbol": "◌"},
     "spirit-stones": {"title": "灵石区", "subtitle": "AI 能力中心", "symbol": "◆"},
     "account": {"title": "角色账号", "subtitle": "这里是你的冒险身份。", "symbol": "◉"},
 }
@@ -47,6 +48,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title=settings.app_name, lifespan=lifespan, docs_url=None, redoc_url=None)
     app.state.database = database
     app.state.settings = settings
+    app.state.pages = PAGES
     from app.modules.quests.router import router as quest_router
     app.include_router(quest_router)
     from app.modules.tasks.router import router as task_router
@@ -86,6 +88,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(memory_wishes_router)
     from app.modules.startup_chat.session_router import router as chat_router
     app.include_router(chat_router)
+    from app.modules.life_os import models as _life_os_models  # noqa: F401
+    from app.modules.life_os.router import router as life_os_router
+    app.include_router(life_os_router)
+    from app.modules.life_os import problem_models as _problem_models  # noqa: F401
+    from app.modules.life_os.problem_router import router as problem_router
+    app.include_router(problem_router)
+    from app.modules.life_os import later_models as _later_life_os_models  # noqa: F401
+    from app.modules.life_os.later_router import router as later_life_os_router
+    app.include_router(later_life_os_router)
+    from app.modules.life_os import schedule_models, care, attractors  # noqa: F401
     app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")
     templates = Jinja2Templates(directory=ROOT / "app/templates")
 

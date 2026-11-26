@@ -1,5 +1,7 @@
 # 人生冒险之旅 / Life Adventure
 
+人生运行系统现已提供独立页面 `/life-os`，使用方式见 [使用说明](docs/LIFE_OS_USE.md)，本轮测试与边界见 [最终验收报告](docs/LIFE_OS_FINAL_ACCEPTANCE.md)。完整备份需包含所有数据库表与私有图片对象；页面导出不等于全库备份。
+
 Adventure Camp 是一套个人 Python Web 系统：将人生目标拆成可执行行动，把日常行动记录为历练，并将成长、回忆、思绪和心愿放在同一处。当前使用方式是本机访问；数据库和私人图片在 Supabase。公网部署及完整多设备部署尚未完成。
 
 本次归档目标为 https://github.com/renduermai/life_adventure 的 **`1` 分支**。文档和本地提交准备不等于已经上传；远程结果以本次最终汇报为准。电脑损坏后的操作见 [恢复指南](docs/RECOVERY.md)。GitHub只保存代码和必要开发资料，私人数据与密钥独立保管。
