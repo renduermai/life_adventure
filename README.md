@@ -1,151 +1,93 @@
 # 人生冒险之旅 / Life Adventure
 
-Adventure Camp 是一套个人 Python Web 系统：将人生目标拆成可执行行动，把日常行动记录为历练，并将成长、回忆、思绪和心愿放在同一处。当前使用方式是本机访问；数据库和私人图片在 Supabase。公网部署及完整多设备部署尚未完成。
+一个本地运行的个人工作与成长系统。把长期目标拆成主线和副本，记录专注与行动，也可以整理杂念、维护生活节奏，或用 AI 从自己的记录中提取线索。
 
-本次归档目标为 https://github.com/renduermai/life_adventure 的 **`1` 分支**。文档和本地提交准备不等于已经上传；远程结果以本次最终汇报为准。电脑损坏后的操作见 [恢复指南](docs/RECOVERY.md)。GitHub只保存代码和必要开发资料，私人数据与密钥独立保管。
+项目使用 FastAPI、Jinja2、原生 CSS/JavaScript、SQLAlchemy、PostgreSQL 和 Alembic。灵石区统一管理模型连接与用途。默认从本机浏览器访问，数据库和私有图片可保存在 Supabase。
 
-## 技术与入口
+## 版本 2 的新增与调整
 
-- 已验证 Windows、CPython **3.11.9**；具体依赖以 requirements.txt 和 constraints.txt 为准。
-- FastAPI入口 `app/main.py`，模块化单体；SQLAlchemy + psycopg连接PostgreSQL，Alembic管理迁移。
-- Jinja2模板、原生CSS/JavaScript，没有需要单独启动的前端开发服务器。
-- 数据库位于Supabase PostgreSQL，当前迁移 **0027_item_entitlements**。应用启动只检查版本，不自动迁移。
-- 私人图片为Supabase Storage私有对象；PostgreSQL保存用户归属、对象路径和元数据，不保存图片二进制。图片通过用户授权的后端接口读取。
-- 统一AI Gateway管理模型、用途绑定、加密凭据和调用状态；REST OpenAI-compatible调用，无LangChain依赖。AI Key用Fernet加密存数据库，主密钥在服务端环境变量。
-- pytest用于默认及显式启用的隔离PostgreSQL测试；可选Playwright使用本机Microsoft Edge。
+### 人生运行系统
 
-## 当前功能
+- 新增独立的「人生运行系统」，覆盖近况、心理能量和带宽、生活稳定与马斯洛双五层、四色运行模式、日程、问题经验、最低生活保障及环境吸引子。
+- 「最近发生」默认显示最新 3 条原文，点「查看更多」展开完整历史。每条可编辑或删除。原文变化时会清理引用它的旧分析和失效的事件依据，可重新分析。
+- 近况分析最多参考 20 轮对话。可勾选或全选杂念，正文留空时使用所选杂念作为本轮原文。
+- 日常节奏按用户时区显示 24 小时时间线、当前时段和下一锚点。保存场景后收起编辑器，页面隐藏场景版本历史。空白周计划可以示例模板开始。
+- 双五层采用阶梯图，可显示最近 1、5、15 或 30 轮分析散点，支持回看依据和记录个人经验。最低保障清单显示完成进度和重启阶段。
+- 环境吸引子默认汇总全历史内仍有证据的已识别循环。各循环使用不同颜色，名称标在中心。有近期依据时标出 AI 估计的当前位置。原文按编号核验，某个关联失效时仅跳过该关联。可在本区下拉面板搜索并多选授权杂念，也可按日期分段分析。
 
-下表表示代码实现范围，不能等同于所有设备和外部服务均已验收。逐次测试结果和边界见 [ACCEPTANCE](docs/ACCEPTANCE.md)、[PROGRESS](docs/PROGRESS.md)。
+详情见 [使用说明](docs/LIFE_OS_USE.md) 和 [交互升级说明](docs/LIFE_OS_INTERACTION_UPGRADE.md)。
 
-| 模块 | 状态 | 实际范围 |
-| --- | --- | --- |
-| 营地门牌 | 已实现 | 登录后仪表盘及行动、成长概览 |
-| 主线与副本 | 已实现 | 主线、里程碑、副本、状态、人工五色、编辑和软删除 |
-| 专注沙漏、历练手记 | 已实现 | 计时、分段、行动记录与手记 |
-| 成长与奖励 | 已实现 | Python规则计算经验/金币，奖励流水及撤销冲正 |
-| 灵石区 | 已实现 | 模型配置、默认/用途绑定、主动连接测试、Supabase只读配置展示 |
-| 启动状态 | 已实现 | 压力/能量滑杆、独立事项、AI分类和散点；自由对话与主副本拆解 |
-| 杂念 | 已实现 | 原文记录、语义归类、主题与历史，失败保留原记录 |
-| 藏经阁 | 已实现 | 链接书架、主副本关联、成功复制计数 |
-| 精神导师 | 已实现 | 人物/事件、热度、授权来源分析和联系评分，失败保留旧分析 |
-| 武器工坊 | 已实现 | 物品、分类、私有图片、持有日均成本、权益到期管理 |
-| 心愿单 | 已实现 | 心愿、估价历史、首价纠正、故事、主动AI分类和私有图片 |
-| 账号与设置 | 部分实现 | 自有账号登录、用户时区及外观；不是完整系统管理后台 |
-| 数据与恢复 | 部分实现 | 部分业务表导出、部分误删找回；没有全库通用导入 |
-| 图片独立备份 | 部分实现 | 加密备份/校验/空桶恢复工具已实现，独立备份与异地恢复尚未完成 |
-| 冒险地图 | 部分实现 | 静态建设路线展示，阶段文案不代表实时完成度 |
-| 公网部署、自动备份、完整灾难演练 | 规划中 | 当前未建立完整持续保护体系 |
+### 闪光的回忆
 
-## 数据关系与边界
+- 在精神导师后新增「朋友搭子」。可记录朋友资料、当前 Base 地和相处事件。点击「重新读取」后，AI 根据记录更新关系五层图与精神共鸣度、人格可信度四象限。
+- 五层图每人只在最高编号层显示一个点。四象限需两轴都有依据，纵轴正向竖排。散点可悬停看姓名、点击看依据。相同输入复用分析，模型失败时保留旧结果。
+- 新增「幸运值」，按可信度 40%、共鸣度 30%、文字里的相处体验 20%、关系最高层级 10% 计算。分数显示在联系热度后，列表按分数降序。缺少依据时列为待评估。
 
-主线下有里程碑，副本可关联主线/里程碑。专注与行动模块记录计时、分段及历练；奖励模块按业务事件生成流水，撤销使用冲正。历练与奖励不是AI随意生成的数字。
+详情见 [朋友搭子](docs/MEMORY_FRIENDS.md)。
 
-灵石区是统一模型入口。启动状态的独立事项与主副本分离，事项分类结果用于象限散点；人工五色不由AI推荐覆盖。右侧对话可在用户授权时参考任务摘要，选中主副本进入拆解，生成建议不直接修改任务。当前自由对话上下文主要在浏览器sessionStorage中，不能当作跨电脑云端历史。
+### 器灵
 
-杂念保存原文并做版本化AI归类。藏经阁以真实主副本ID关联链接，复制成功才增加点击数。精神导师只使用用户确认预览的材料及获授权的任务/杂念ID，逐字证据和来源校验后保存分析，不写回来源。
+- 左侧导航首项。每个功能区先显示一句简介，点击「详情」展开用途、已上线的变化、相关功能和入口。
+- 登录后统计近 30 天及累计打开次数，同一账号同一区域 10 分钟内的重复打开只计一次。点击「生成使用提醒」，AI 根据较少打开的功能区给出建议和直达入口。
+- 「向器灵提问」可基于已上线功能清单连续追问。问答正文只留在当前页面，刷新或离开后清空。
 
-武器和心愿关联图片资产；新图片上传成功后切换关联，旧对象按原延迟清理规则处理。权益剩余天数按用户时区当天日期计算，不入库；日均价格仍是购买价除以已持有天数，最低1天，不改为权益总期限。
+详情见 [器灵使用说明](docs/ARTIFACT_SPIRIT.md)。
 
-## 新电脑安装与启动（Windows PowerShell）
+### 灵根
 
-正式推送完成后使用下列命令。如果远程`1`尚未建立，克隆该分支会失败，应先完成归档。
+- 输入 AI 新发现、想法或真实经历后，「AI 灵力探查」先把文字按主题分层分点，再逐区分析。未归类片段仍参与分析。顶部显示分析中、失败或成功。
+- 展示天赋强度、出现次数和原文依据，也记录捕捉到的信号与关联天赋。不确定是否同义的发现由用户确认归并。重复提交同一原文不重复计数。
+- 底层天赋图腾以「认知创造力」为中心，新增节点需有实际记录支持。「心神修炼」展示潜在优势与可能的失控表现。
+- 「可能抵达的位置」分为可能职业演化路径和值得长期验证的方向。新证据可更新条目，保留变更历史和可尝试的下一步。旧原文可以单独补充发展分析。
+- 原文、天赋、信号、待确认发现、历史记录、图腾分析节点、修炼及发展方向支持编辑和删除。列表使用右侧小号文字操作，删除标红。改动原文后移除失效证据并重新计算次数。
 
-```powershell
-git clone --branch 1 --single-branch https://github.com/renduermai/life_adventure.git
+详情见 [灵根使用说明](docs/SPIRIT_ROOT.md)。
+
+## 功能速览
+
+| 功能区 | 用途 |
+| --- | --- |
+| 营地门牌、角色账号、营地设置 | 仪表盘、登录、时区和外观 |
+| 主线任务、副本任务 | 目标、里程碑、任务拆解、状态和手动五色 |
+| 专注沙漏、历练手记、成长与奖励 | 专注计时、行动记录、经验及金币流水 |
+| 启动状态 | 压力与能量、事项散点、任务建议和 AI 对话 |
+| 杂念、藏经阁 | 原文归类、链接书架及复制计数 |
+| 闪光的回忆 | 精神导师、朋友搭子、武器工坊、心愿单。包括权益到期和私有图片 |
+| 人生运行系统 | 近况、层次视角、节奏、最低保障与环境吸引子 |
+| 灵石区、器灵、灵根 | 模型及 Supabase 配置展示、功能导览与问答、原文证据分析 |
+| 数据与恢复 | 业务数据导出与恢复指引 |
+
+## Windows 安装与启动
+
+项目已在 Windows 和 Python 3.11.9 上验证。应用期望的数据库迁移版本为 `0038_root_development`，启动时只检查版本。依赖版本见 `requirements*.txt` 和 `constraints.txt`。
+
+~~~powershell
+git clone https://github.com/renduermai/life_adventure.git
 Set-Location .\life_adventure
 py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip --isolated install --index-url https://pypi.org/simple -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pip --isolated install --index-url https://pypi.org/simple -r requirements.txt
 .\.venv\Scripts\python.exe -m pip check
 Copy-Item .env.example .env
 notepad .env
-```
+~~~
 
-填写环境变量的获取方式见 [恢复指南](docs/RECOVERY.md)。不要把真实值提交到Git。重新接入原Supabase时保留原AI_ENCRYPTION_KEYS，不要随意生成替代值，否则旧AI凭据无法解密。
+按 [恢复指南](docs/RECOVERY.md) 填写本地配置。用项目虚拟环境运行 `python -m alembic current` 和 `python -m alembic heads` 核对版本。只有在确认连接目标并完成备份后，才执行 `python -m alembic upgrade head`。
 
-```powershell
-.\.venv\Scripts\python.exe -m alembic current
-.\.venv\Scripts\python.exe -m alembic heads
-```
-
-两者均为0027时无需迁移。只有明确连接了正确数据库、已有备份且确认待升级后，才手动执行：
-
-```powershell
-.\.venv\Scripts\python.exe -m alembic upgrade head
-```
-
-启动现有单个FastAPI服务：
-
-```powershell
+~~~powershell
 .\Start-AdventureCamp.cmd
-```
-
-也可在终端运行：
-
-```powershell
+# 或直接运行 FastAPI
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log
-```
+~~~
 
-访问 http://127.0.0.1:8000 ，readiness为 http://127.0.0.1:8000/health/ready 。启动器检查端口及服务身份，不误杀其他进程。桌面快捷方式不随Git迁移，在新电脑手工指向克隆目录的Start-AdventureCamp.cmd。没有开机自启。
+打开 [本地首页](http://127.0.0.1:8000/) 或 [健康检查](http://127.0.0.1:8000/health/ready)。Windows 桌面快捷方式需要在新电脑重新创建。
 
-## 配置与测试
+## 测试、备份与恢复
 
-.env由项目绝对ROOT路径加载，不依赖终端当前盘符。DATABASE_URL用于运行，MIGRATION_DATABASE_URL用于明确迁移；远程PostgreSQL需要sslmode=require或更严格校验。配置值是SQLAlchemy URL，特殊密码需URL编码。
-
-SUPABASE_URL为项目API地址，控制台网址是另一个地址。当前图片实现读取SUPABASE_SERVICE_ROLE_KEY，兼容新版sb_secret_和旧service_role；只在服务器使用。可选Publishable/anon/Secret字段用于只读展示，其中SUPABASE_SECRET_KEY不会替代现有Storage连接字段。不要为了显示卡片更换连接。
-
-完整测试收集会导入Playwright。只运行网站不需要它；执行完整pytest前先安装requirements-browser.txt（包含开发依赖），本机Edge仅在启用实际浏览器测试时需要。
-
-```powershell
+~~~powershell
 .\.venv\Scripts\python.exe -m pip --isolated install --index-url https://pypi.org/simple -r requirements-browser.txt
 .\.venv\Scripts\python.exe -m pytest -q
-```
+~~~
 
-默认跳过数据库测试不等于通过。集成测试须显式设置TEST_DATABASE_URL（建议独立测试库），会创建并清理随机schema。可选浏览器依赖：
+集成测试需要通过 `TEST_DATABASE_URL` 显式连接可创建隔离 schema 的测试库。浏览器检查可使用本机 Edge。各模块的验证结果和前置条件见 [验收记录](docs/ACCEPTANCE.md) 和 [功能进度](docs/PROGRESS.md)。
 
-```powershell
-.\.venv\Scripts\python.exe -m pip --isolated install --index-url https://pypi.org/simple -r requirements-browser.txt
-```
-
-真实AI及云图片测试需要额外显式开关，可能产生费用或写入合成资源；不要在新电脑恢复演练时自动启用。没有Supabase配置时可查看页面壳，readiness会如实报告未配置。
-
-## 实际目录
-
-```text
-app/
-  main.py                   FastAPI入口
-  core/                     配置、数据库、日志
-  modules/                  identity/quests/tasks/activity/growth/dashboard
-                            ai_gateway/startup_state/startup_items/startup_chat
-                            distractions/library/data_tools/shining_memories
-  templates/                Jinja页面
-  static/                   CSS、JS、程序资源
-migrations/versions/        0001–0027迁移
-scripts/                    Windows启动器、私有图片备份工具
-tests/                     自动化测试
-docs/                       架构、进度、决策、验收及恢复说明
-.env.example                无真实值的配置模板
-requirements*.txt           运行、开发及可选浏览器依赖
-constraints.txt             版本约束
-AGENTS.md                   后续Codex开发纪律
-Start-AdventureCamp.cmd     Windows启动入口
-```
-
-## 可核实的发展记录
-
-- 2026-11-09：Git初始基础工程提交。
-- 2026-11-10：Git提交账号、主副本、计时、历练、奖励、仪表盘、部分导出与恢复。
-- 2026-11-15至16日：Git提交灵石区、启动状态及后续重构、杂念与藏经阁。
-- 2026-11-16：此前最新本地提交fe1b711；其后的闪光的回忆等变更在本次归档前仍未提交。
-- 2026-11-22：项目进度/验收文档记录精神导师、武器、心愿、私有Storage实测及局部优化完成。
-- 2026-11-23：文档和本次操作记录确认权益到期管理、迁移0027、GitHub备份准备。
-
-以上区分Git提交日期和文档记录的完成日期。需求参考时间线不是完成凭据，没有依据文件修改时间补造开发日期，也未声称读取全部聊天历史。
-
-## 后续开发和保护
-
-尚待完成独立全库备份、图片备份、异地恢复演练、公网部署和多设备验收。历史ROADMAP中的部分下一步文字已经落后，按最新PROGRESS/ACCEPTANCE及代码确认，不据此自动开工。
-
-后续建议：一个功能完成 → 测试 → 更新文档 → 本地Commit → 用户明确批准后Push。可按功能使用短分支，验收后保留稳定标签；不需要复杂GitFlow，不自动Push，不重写历史或覆盖远程main。
-
-代码恢复不等于数据恢复；完整条件和风险见 [RECOVERY](docs/RECOVERY.md)。本项目的历史加密快照、.env和私人数据不应出现在公开仓库中。
+GitHub 保存代码、迁移和开发资料。`main` 保留连续版本历史，`1` 和 `2` 分别记录两个代码版本。完整恢复另需 PostgreSQL 数据备份、私有 Supabase Storage 图片及独立备份、服务端配置，以及保存在可信位置的密钥。站内导出仅覆盖部分数据。具体步骤见 [备份与恢复](docs/RECOVERY.md)。

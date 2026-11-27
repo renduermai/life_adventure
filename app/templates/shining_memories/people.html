@@ -1,13 +1,16 @@
 <script src="{{ url_for('static', path='js/memory_people.js') }}" defer></script>
+{% if section == 'people' %}
 <script src="{{ url_for('static', path='js/memory_person_analysis.js') }}" defer></script>
+{% endif %}
 <p id="people-message" role="status" aria-live="polite"></p>
 <div class="memory-people-layout">
-<section class="card memory-panel"><div class="memory-toolbar"><h2>精神导师</h2><button type="button" class="button primary" id="person-new">＋ 添加人物</button><button type="button" class="button secondary" id="people-reload">重新读取</button></div><p class="muted">联系热度只代表时间新鲜度，不代表感情深浅。</p><div id="people-list"><p class="muted">正在读取…</p></div><button id="people-more" class="button secondary" hidden>加载更多人物</button></section>
+<section class="card memory-panel"><div class="memory-toolbar"><h2>{{ '朋友搭子' if section == 'friends' else '精神导师' }}</h2><button type="button" class="button primary" id="person-new">＋ 添加人物</button><button type="button" class="button secondary" id="people-reload">重新读取</button></div><p class="muted">联系热度只代表时间新鲜度，不代表感情深浅。</p><div id="people-list" data-section="{{ section }}"><p class="muted">正在读取…</p></div><button id="people-more" class="button secondary" hidden>加载更多人物</button></section>
 <aside class="card memory-panel" id="person-detail"><p class="muted">选择一位人物，查看经历与分析。</p></aside>
 </div>
 <section class="card memory-panel" id="person-editor" hidden><h3 id="person-editor-title">添加人物</h3>
 <form id="person-form" class="form-stack">
 <label>人物姓名<input name="name" maxlength="120" required></label>
+{% if section == 'friends' %}<label>当前 Base 地<input name="base_location" maxlength="120" placeholder="例如：上海" required></label>{% endif %}
 <label>与我的关系<input name="relationship" maxlength="120" required></label>
 <label>我们的珍贵时刻<textarea name="precious_moments" maxlength="8000" rows="4"></textarea></label>
 <label>手动记录的最近联系日期<input name="manual_contact_date" type="date"></label><small class="muted">不记得可留空；有效实际联系事件也会参与计算。</small>

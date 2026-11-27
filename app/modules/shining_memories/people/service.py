@@ -19,8 +19,8 @@ def today(db,uid):return now().astimezone(ZoneInfo(db.get(User,uid).timezone)).d
 def fingerprint(data):return sha256(json.dumps(data,sort_keys=True,default=str,ensure_ascii=False).encode()).hexdigest()
 
 
-def get(db,uid,pid):
-    person=db.scalar(select(MemoryPerson).where(MemoryPerson.id==pid,MemoryPerson.user_id==uid,MemoryPerson.deleted_at.is_(None)))
+def get(db,uid,pid,kind="mentor"):
+    person=db.scalar(select(MemoryPerson).where(MemoryPerson.id==pid,MemoryPerson.kind==kind,MemoryPerson.user_id==uid,MemoryPerson.deleted_at.is_(None)))
     if not person:raise MediaError('not_found','人物不存在或无权访问',404)
     return person
 
@@ -41,15 +41,40 @@ def contact_date(db,person):
     return max([d for d in (person.manual_contact_date,actual) if d],default=None)
 
 
+def luck_score(person):
+    mapping = (person.friend_mapping or {}).get('result') or {}
+    layers = mapping.get('layers', [])
+    trust, resonance, impact = (mapping.get(key) for key in ('trust', 'resonance', 'text_impact'))
+    if not layers or trust is None or resonance is None or impact is None:
+        return None
+    highest_layer = max(layer['layer'] for layer in layers)
+    # Score out of 100. Use integer arithmetic with half-up rounding.
+    weighted = 40 * trust['score'] + 30 * resonance['score'] + 20 * impact['score'] + 200 * highest_layer
+    return (weighted + 50) // 100
+
+
 def public(db,person,current):
     result={k:getattr(person,k) for k in ('id','name','relationship','precious_moments','manual_contact_date','contact_preference','notes','version','created_at','updated_at')}
+    if person.kind == 'friend':
+        result['base_location'] = person.base_location
+        result['luck_score'] = luck_score(person)
+        result['luck_stale'] = result['luck_score'] is not None and person.friend_mapping.get('version') != person.version
     contact=contact_date(db,person)
     return result|{'last_contact_date':contact,'contact_heat':heat(contact,current)}
 
 
-def listing(db,uid,offset=0):
-    rows=list(db.scalars(select(MemoryPerson).where(MemoryPerson.user_id==uid,MemoryPerson.deleted_at.is_(None))
-        .order_by(MemoryPerson.created_at.desc(),MemoryPerson.id)))
+def listing(db,uid,offset=0,kind="mentor"):
+    query = select(MemoryPerson).where(
+        MemoryPerson.user_id == uid, MemoryPerson.kind == kind, MemoryPerson.deleted_at.is_(None)
+    ).order_by(MemoryPerson.created_at.desc(), MemoryPerson.id)
+    if kind == 'friend':
+        ranked = [(row, luck_score(row)) for row in db.scalars(query)]
+        ranked.sort(key=lambda entry: (entry[1] is None, -(entry[1] or 0)))
+        page = ranked[offset:offset+21]
+        current = today(db, uid)
+        return {'items': [public(db, row, current) for row, _ in page[:20]],
+                'next_offset': offset + 20 if len(page) > 20 else None}
+    rows = list(db.scalars(query))
     from .analysis import view
     values=[]
     for p in rows:
@@ -63,19 +88,19 @@ def listing(db,uid,offset=0):
     return {'items':values[offset:offset+20],'next_offset':offset+20 if len(values)>offset+20 else None}
 
 
-def create(db,uid,data):
+def create(db,uid,data,kind="mentor"):
     lock_user(db,uid);values=data.model_dump(exclude={'request_id'});fp=fingerprint(values)
     old=db.scalar(select(MemoryPerson).where(MemoryPerson.user_id==uid,MemoryPerson.create_request_id==data.request_id))
     if old:
-        if old.create_fingerprint!=fp or old.deleted_at:raise MediaError('request_conflict','保存编号已被使用',409)
+        if old.kind!=kind or old.create_fingerprint!=fp or old.deleted_at:raise MediaError('request_conflict','保存编号已被使用',409)
         return public(db,old,today(db,uid))
     check_date(data.manual_contact_date,today(db,uid))
-    person=MemoryPerson(user_id=uid,create_request_id=data.request_id,create_fingerprint=fp,**values)
+    person=MemoryPerson(user_id=uid,kind=kind,create_request_id=data.request_id,create_fingerprint=fp,**values)
     db.add(person);db.flush();return public(db,person,today(db,uid))
 
 
-def mutate(db,uid,pid,data,delete=False):
-    lock_user(db,uid);p=get(db,uid,pid)
+def mutate(db,uid,pid,data,delete=False,kind="mentor"):
+    lock_user(db,uid);p=get(db,uid,pid,kind)
     if p.version!=data.expected_version:raise MediaError('version_conflict','人物已变化，请重新读取',409)
     if delete:p.deleted_at=now()
     else:
@@ -88,15 +113,15 @@ def mutate(db,uid,pid,data,delete=False):
 def event_public(row):return {k:getattr(row,k) for k in ('id','event_date','content','is_actual_contact','version','created_at')}
 
 
-def events(db,uid,pid,offset=0):
-    get(db,uid,pid)
+def events(db,uid,pid,offset=0,kind="mentor"):
+    get(db,uid,pid,kind)
     rows=list(db.scalars(select(MemoryPersonEvent).where(MemoryPersonEvent.person_id==pid,MemoryPersonEvent.user_id==uid,
         MemoryPersonEvent.deleted_at.is_(None)).order_by(MemoryPersonEvent.event_date.desc(),MemoryPersonEvent.created_at.desc(),MemoryPersonEvent.id).offset(offset).limit(21)))
     return {'items':[event_public(e) for e in rows[:20]],'next_offset':offset+20 if len(rows)>20 else None}
 
 
-def save_event(db,uid,pid,data,eid=None,delete=False):
-    lock_user(db,uid);p=get(db,uid,pid)
+def save_event(db,uid,pid,data,eid=None,delete=False,kind="mentor"):
+    lock_user(db,uid);p=get(db,uid,pid,kind)
     if eid:
         row=db.scalar(select(MemoryPersonEvent).where(MemoryPersonEvent.id==eid,MemoryPersonEvent.person_id==pid,
             MemoryPersonEvent.user_id==uid,MemoryPersonEvent.deleted_at.is_(None)))

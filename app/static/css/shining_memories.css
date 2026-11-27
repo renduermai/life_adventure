@@ -11,3 +11,35 @@
 #item-list .memory-card-actions,#wish-list .memory-card-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.15rem;max-width:100%;margin-top:.3rem}#item-list .memory-card-action,#wish-list .memory-card-action{appearance:none;border:0;background:transparent;color:var(--accent);font:inherit;font-size:13px;line-height:1.3;padding:.4rem .45rem;margin:0;border-radius:6px;cursor:pointer;white-space:nowrap;min-height:40px}#item-list .memory-card-action:hover,#wish-list .memory-card-action:hover{background:var(--hover)}#item-list .memory-card-action:active,#wish-list .memory-card-action:active{opacity:.65}#item-list .memory-card-action:focus-visible,#wish-list .memory-card-action:focus-visible{outline:2px solid var(--accent);outline-offset:1px}#item-list .memory-card-action.is-delete,#wish-list .memory-card-action.is-delete{color:#d55b5b}#item-list .memory-card-action:disabled,#wish-list .memory-card-action:disabled{opacity:.5;cursor:default}#item-list .item-cost{display:flex;align-items:baseline;flex-wrap:wrap;gap:.25rem;margin:.35rem 0}#item-list .item-cost-label,#item-list .item-cost-unit{font-size:12px;font-weight:400;color:var(--muted)}#item-list .item-cost-value{font-size:26px;font-weight:700;line-height:1.2}
 
 #item-expiry-field[hidden]{display:none}#item-list .item-entitlement-tag{align-self:flex-start;font-size:12px;padding:.15rem .5rem;border-radius:6px;background:var(--hover);color:var(--accent)}#item-list .item-expiry{font-size:13px;font-weight:400;line-height:1.3;margin:.35rem 0;overflow-wrap:anywhere;color:var(--accent)}#item-list .item-expiry-days{font-size:26px;font-weight:600}#item-list .item-expiry.expired{color:#cf8585}#item-list .item-expiry.due{color:#c99945}
+
+.memory-friend-graphs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.memory-friend-graphs h2 { margin-block: 0 1rem; }
+.memory-friend-layers { display: grid; justify-items: center; gap: .5rem; }
+.memory-friend-layer { text-align: center; padding: .55rem; border: 1px solid #7585a4; border-radius: .65rem; background: #7585a420; width: 100%; }
+.memory-friend-layer:nth-child(1) { width: 68%; }
+.memory-friend-layer:nth-child(2) { width: 76%; background: #7298bd24; }
+.memory-friend-layer:nth-child(3) { width: 84%; background: #71a99024; }
+.memory-friend-layer:nth-child(4) { width: 92%; background: #bf9f6f24; }
+.memory-friend-layer:nth-child(5) { background: #bf818124; }
+.memory-friend-layer span, .memory-friend-plot small { display: block; font-size: .82rem; }
+.memory-friend-layer-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem; }
+.memory-friend-layer-dots:not(:empty) { padding-top: .3rem; }
+.memory-friend-axes { display: grid; grid-template-columns: auto minmax(0,1fr); gap: .5rem; }
+.memory-friend-axis-y { display: flex; flex-direction: column; align-items: center; align-self: center; gap: .25rem; }
+.memory-friend-axis-y-label { writing-mode: vertical-rl; text-orientation: upright; white-space: nowrap; }
+.memory-friend-axis-x { grid-column: 2; text-align: center; }
+.memory-friend-plot { position: relative; min-height: 19rem; display: grid; grid-template: repeat(2,1fr) / repeat(2,minmax(0,1fr)); border: 1px solid #7585a4; border-radius: .65rem; }
+.memory-friend-plot > div:not(:last-child) { text-align: center; padding: .6rem .2rem; background: #bf9f6f24; }
+.memory-friend-plot > div:nth-child(2) { background: #71a99024; }
+.memory-friend-plot > div:nth-child(3) { background: #bf818124; }
+.memory-friend-plot > div:nth-child(4) { background: #7298bd24; }
+.memory-friend-plot > div:nth-child(odd):not(:last-child) { border-right: 1px dashed #7585a4; }
+.memory-friend-plot > div:nth-child(-n+2) { border-bottom: 1px dashed #7585a4; }
+#friend-quadrant-points { position: absolute; inset: 0; pointer-events: none; }
+.memory-friend-dot { width: 15px; height: 15px; padding: 0; border: 2px solid #fff; border-radius: 50%; background: #137d68; cursor: pointer; }
+.memory-friend-dot:hover, .memory-friend-dot:focus-visible { outline: 2px solid #58bbaa; z-index: 2; }
+#friend-quadrant-points .memory-friend-dot { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; }
+.memory-friend-dot.stale { background: #947242; }
+@media (max-width: 760px) {
+    .memory-friend-graphs { grid-template-columns: minmax(0,1fr); }
+}

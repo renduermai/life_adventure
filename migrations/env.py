@@ -32,6 +32,19 @@ from app.modules.shining_memories.people import analysis_models as person_analys
 from app.modules.shining_memories.items import models as memory_items_models  # noqa: F401
 from app.modules.shining_memories.wishes import models as memory_wishes_models  # noqa: F401
 
+from app.modules.life_os import problem_models as life_os_problem_models  # noqa: F401
+from app.modules.life_os import models as life_os_models  # noqa: F401
+from app.modules.life_os import later_models as life_os_later_models  # noqa: F401
+from app.modules.life_os import schedule_models  # noqa: F401
+
+from app.modules.life_os import care  # noqa: F401
+
+from app.modules.life_os import attractors  # noqa: F401
+
+from app.modules.artifact_spirit import models as feature_visit_models  # noqa: F401
+
+from app.modules.spirit_root import models as spirit_root_models  # noqa: F401
+
 config = context.config
 
 

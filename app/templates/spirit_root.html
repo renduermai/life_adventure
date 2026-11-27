@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/spirit_root.css') }}">
+<script src="{{ url_for('static', path='js/spirit_root.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<section class="card root-panel" aria-labelledby="root-probe-title">
+  <div class="root-probe-heading">
+    <h2 id="root-probe-title">灵力探查</h2>
+    <span id="root-analysis-state" class="root-analysis-state" role="status"></span>
+  </div>
+  <form id="root-form" class="form-stack">
+    <label for="root-original">粘贴给我 AI 新发现或新想法 idea</label>
+    <textarea id="root-original" rows="5" maxlength="10000" required placeholder="可以贴一段分析、一个想验证的点子，或写下一次实际经历。"></textarea>
+    <p class="muted">提交后先用灵石区模型把原文分层分点，再分析各板块。原文会保存，分析会参考已有条目和方向名称。每次最多 10,000 字符。</p>
+    <div class="root-actions">
+      <button class="button primary" type="submit">AI 灵力探查</button>
+      <p class="muted" id="root-status" role="status"></p>
+    </div>
+  </form>
+</section>
+<div class="root-columns">
+  <section class="card root-panel" aria-labelledby="root-talent-title">
+    <h2 id="root-talent-title">天赋</h2>
+    <div id="root-talents"><p class="muted">正在读取…</p></div>
+  </section>
+  <section class="card root-panel" aria-labelledby="root-signal-title">
+    <h2 id="root-signal-title">捕捉到的信号</h2>
+    <div id="root-signals"><p class="muted">正在读取…</p></div>
+  </section>
+</div>
+<section class="card root-panel root-development" aria-labelledby="root-totem-title">
+  <h2 id="root-totem-title">底层天赋图腾</h2>
+  <figure class="root-totem">
+    <div class="root-totem-map">
+      <svg viewBox="0 0 300 300" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M150 150 150 50 M150 150 50 150 M150 150 250 150 M150 150 50 250 M150 150 250 250"/>
+      </svg>
+      <div class="root-totem-node" data-base-totem="感知力"><strong>感知力</strong><span>察觉异常</span></div>
+      <div class="root-totem-node" data-base-totem="价值判断"><strong>价值判断</strong><span>辨别意义</span></div>
+      <div class="root-totem-node root-totem-center"><strong>认知创造力</strong><span>潜在核心优势</span></div>
+      <div class="root-totem-node" data-base-totem="联想力"><strong>联想力</strong><span>建立关联</span></div>
+      <div class="root-totem-node" data-base-totem="系统力"><strong>系统力</strong><span>设计机制</span></div>
+      <div class="root-totem-node" data-base-totem="抽象力"><strong>抽象力</strong><span>提取规律</span></div>
+    </div>
+    <div id="root-totem-extra" class="root-totem-extra" hidden></div>
+    <div class="root-totem-outcome">产品 · 作品 · 策略 · 新方法</div>
+    <figcaption class="muted">初始图腾来自参考图。标有「查看依据」的节点已关联探查记录。</figcaption>
+  </figure>
+</section>
+<section class="card root-panel root-development" aria-labelledby="root-cultivation-title">
+  <h2 id="root-cultivation-title">心神修炼</h2>
+  <div id="root-cultivation"><p class="muted">探查后可查看潜在优势和可能的失控表现。</p></div>
+</section>
+<section class="card root-panel root-development" aria-labelledby="root-directions-title">
+  <h2 id="root-directions-title">可能抵达的位置</h2>
+  <p class="muted">根据现有记录提出可尝试的路径，随着新证据更新。</p>
+  <div class="root-columns root-directions">
+    <div><h3>可能职业演化路径</h3><div id="root-career"><p class="muted">等待有依据的探查结果。</p></div></div>
+    <div><h3>值得长期验证的方向</h3><div id="root-long-term"><p class="muted">等待有依据的探查结果。</p></div></div>
+  </div>
+</section>
+<section class="card root-panel" id="root-review" aria-labelledby="root-review-title" hidden>
+  <h2 id="root-review-title">待确认</h2>
+  <div id="root-review-items"></div>
+</section>
+<details class="card root-panel root-recent">
+  <summary>最近提交的原文</summary>
+  <div id="root-sources"></div>
+</details>
+<dialog id="root-dialog" aria-labelledby="root-dialog-title" class="card root-panel">
+  <div class="root-dialog-header">
+    <h2 id="root-dialog-title">证据详情</h2>
+    <form method="dialog"><button type="submit" class="button secondary">关闭</button></form>
+  </div>
+  <div id="root-dialog-content" aria-live="polite"></div>
+</dialog>
+{% endblock %}

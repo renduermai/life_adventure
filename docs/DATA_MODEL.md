@@ -1,5 +1,35 @@
 # 数据模型
 
+## 交互与数据联动升级（2026-11-27）
+
+0034将life_os_messages.content扩为TEXT，增加可空JSON input_note_ids记录用户选定的杂念来源。原59表465行旧字段迁移前后一致。source_ids校验最多20，散点和吸引子复用既有分析与事件，不新增散点存储表。长输入不能强行降级回VARCHAR(4000)，回退应保留新列。具体来源保护、默认示意与预算见[LIFE_OS_INTERACTION_UPGRADE](LIFE_OS_INTERACTION_UPGRADE.md)。
+
+## 第9步（2026-11-27）
+
+0033新增life_os_attractor_runs：用户外键，scope/fingerprint，status/error_code，snapshot/result/usage JSON，UTC时间。snapshot只存来源哈希/范围与策略；原始数据不回写。
+
+## 第8步（2026-11-27）
+
+0032新增life_os_care（owner主键、JSON模板/旧版历史、version）及life_os_care_days（owner/day复合主键、JSON每日事项快照/移除事项档案/成功节点/反馈）。已有业务表不改写。
+
+## 人生运行系统0031
+
+新增life_os_schedule_runs：UUID与用户外键、指纹、状态/失败码、context/result/usage JSON、创建UTC时间。context引用场景和状态快照，result成对保存每日与每周版本；没有改变原始场景表。
+
+## 人生运行系统0030
+
+新增双层经验及其版本、单行用户实际/建议模式与模式历史、场景模板/活跃场景指针/场景历史，共7表。经验和场景均用户归属、软删除并保留版本快照；经验字段区分用户与预留AI来源。模式记录当前实际值、AI建议值、依据、followAI开关和分析来源。每日时段JSON保留开始/结束、跨午夜日偏移、活动、固定标记与数组顺序；每周节律保留weekday与daytime/evening。详情见[LIFE_OS_STEPS_4_6](LIFE_OS_STEPS_4_6.md)。
+
+## 人生运行系统0029（2026-11-26）
+
+新增life_os_problems（类型与受保护手动字段）、life_os_events（confirmed/pending）、life_os_event_sources（消息/杂念源唯一、owner复合FK）、life_os_event_problems（事件/问题复合主键）、life_os_experiences（建议/观察/行动/反馈分离与引用）、life_os_problem_history（修改历史与幂等回执）。分析新增note_scope/experience_status/experience_error。无旧数据清理，计数不存为模型事实。备份需包含新增表。详见[LIFE_OS_PROBLEMS](LIFE_OS_PROBLEMS.md)。
+
+
+## 人生运行系统0028（2026-11-26）
+
+life_os_messages：id、user_id、request_id、原文content、created_at；user_id/request_id唯一。life_os_analyses：原文与owner复合外键、request_id唯一、status/error_code、JSON结果、冻结source_ids、prompt_version、model_id/config_version、usage、起止时间。原文和成功快照不被模型覆盖；手动校准追加快照。完整备份需包含两表；原固定名单导出不含它们。无其他表结构变化。
+
+
 0027_item_entitlements仅新增memory_items.is_entitlement Boolean NOT NULL DEFAULT false与expires_at Date NULL；CHECK要求权益日期非空且>=purchase_date，普通日期为空。旧记录false/null。剩余天数按用户时区读取计算，不入库，原成本字段和公式不变。见[实施记录](ITEM_ENTITLEMENTS.md)。
 
 人物分析最小修复无表结构变更，仍为0026。新生成结果保持原字段结构，历史宽Schema继续可读；现有ai_call_logs.usage JSON增加人物专属脱敏数字诊断，包括截断用量。无正式人物、任务、事件或杂念原文数据迁移。

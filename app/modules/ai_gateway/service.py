@@ -11,7 +11,7 @@ from app.modules.ai_gateway.models import AIConfig, AIModuleBinding, AICallLog
 from app.modules.ai_gateway.adapter import OpenAICompatibleAdapter
 from app.modules.ai_gateway.security import AIError, cipher, decrypt, encrypt, key_version, post_json
 
-PURPOSES = {'wish_category', 'person_analysis', 'distraction_classification', 'connection_test', 'startup_state', 'task_analysis', 'breakdown', 'quest_generation', 'review', 'character'}
+PURPOSES = {'spirit_root_format', 'spirit_root_probe', 'artifact_spirit_ask', 'artifact_spirit_remind', 'friend_relationship', 'life_os_attractors', 'life_os_schedule', 'life_os_core', 'wish_category', 'person_analysis', 'distraction_classification', 'connection_test', 'startup_state', 'task_analysis', 'breakdown', 'quest_generation', 'review', 'character'}
 MODULES = PURPOSES - {'connection_test'}
 
 
@@ -154,7 +154,7 @@ class AIService:
         if (not isinstance(messages,list) or not 1<=len(messages)<=30
                 or any(not isinstance(m,dict) or set(m)!={'role','content'} or m.get('role') not in {'system','user','assistant'}
                        or not isinstance(m.get('content'),str) for m in messages)
-                or len(json.dumps(messages,ensure_ascii=False))>24000):
+                or len(json.dumps(messages,ensure_ascii=False))>(260000 if purpose=='life_os_core' else 90000 if purpose=='life_os_attractors' else 48000 if purpose in {'spirit_root_probe','spirit_root_format'} else 24000)):
             raise AIError('invalid_messages','对话格式无效或超过限制',422)
         started=time.monotonic()
         with self.database.transaction() as db:
@@ -189,15 +189,15 @@ class AIService:
         try:
             transport=post_json if timeout_seconds==60 else lambda *args:post_json(*args,timeout_seconds=timeout_seconds)
             person_options={}
-            if purpose=='person_analysis':
+            if purpose in {'spirit_root_probe','spirit_root_format','artifact_spirit_ask','artifact_spirit_remind','person_analysis','friend_relationship','life_os_core','life_os_schedule','life_os_attractors'}:
                 from urllib.parse import urlsplit
                 host=urlsplit(url).hostname or ''
-                person_options={'diagnostics':True}
+                person_options={'diagnostics':purpose=='person_analysis'}
                 if host.endswith('.maas.aliyuncs.com') and model=='deepseek-v4.1-flash':person_options['enable_thinking']=False
-            content,usage=OpenAICompatibleAdapter(transport).generate(url,key,model,messages,output_schema,max_tokens=8192 if purpose=='person_analysis' else 4096 if purpose=='distraction_classification' else 1536 if purpose in {'wish_category','breakdown','task_analysis','startup_state'} else 512,json_mode=json_mode,**person_options)
+            content,usage=OpenAICompatibleAdapter(transport).generate(url,key,model,messages,output_schema,max_tokens=8192 if purpose=='person_analysis' else 4096 if purpose in {'spirit_root_probe','life_os_core','life_os_schedule','life_os_attractors'} else 4096 if purpose=='distraction_classification' else 1536 if purpose in {'spirit_root_format','artifact_spirit_ask','artifact_spirit_remind','friend_relationship','wish_category','breakdown','task_analysis','startup_state'} else 512,json_mode=json_mode,**person_options)
         except AIError as exc:
             error=exc
-            if purpose=='person_analysis':usage=getattr(exc,'usage',None)
+            if purpose in {'spirit_root_probe','spirit_root_format','artifact_spirit_ask','artifact_spirit_remind','person_analysis','friend_relationship','life_os_core','life_os_schedule','life_os_attractors'}:usage=getattr(exc,'usage',None)
         except Exception:
             error=AIError('invalid_output','模型输出不符合要求，结果未保存到正式业务',502)
         finally:

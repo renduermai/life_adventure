@@ -35,12 +35,12 @@ def user_id(request):
         return user.id
 
 
-async def body(request,schema):
+async def body(request,schema,max_bytes=32768):
     same_origin(request)
     content=bytearray()
     async for chunk in request.stream():
         content.extend(chunk)
-        if len(content)>32768:
+        if len(content)>max_bytes:
             raise AIError('body_too_large','请求体过大',413)
     try:
         return schema.model_validate(json.loads(content))

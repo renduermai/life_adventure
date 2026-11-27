@@ -1,0 +1,34 @@
+<script src="{{ url_for('static', path='js/memory_friend_map.js') }}" defer></script>
+<div class="memory-friend-graphs">
+  <section class="card memory-panel" aria-labelledby="friend-layer-title">
+    <h2 id="friend-layer-title">关系五层图</h2>
+    <div class="memory-friend-layers">
+      {% for name, description in [('表达层','语言、温柔、热情、社交形象'),('认知层','共情、洞察、理解世界的方式'),('价值层','什么更重要，什么不可交换'),('利益层','发生冲突时，如何取舍'),('生存层','安全感与自我保护')] %}
+      <div class="memory-friend-layer">
+        <strong>L{{ loop.index }} · {{ name }}</strong>
+        <span>{{ description }}</span>
+        <div data-friend-layer="{{ loop.index }}" class="memory-friend-layer-dots"></div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  <section class="card memory-panel" aria-labelledby="friend-quadrant-title">
+    <h2 id="friend-quadrant-title">朋友关系四象限</h2>
+    <div class="memory-friend-axes">
+      <div class="memory-friend-axis-y">
+        <span aria-hidden="true">↑</span>
+        <span class="memory-friend-axis-y-label">精神共鸣度</span>
+      </div>
+      <div class="memory-friend-plot">
+        <div><strong>精神旅伴</strong><small>有共鸣，信任仍需了解</small></div>
+        <div><strong>灵魂挚友</strong><small>有共鸣，也有信任</small></div>
+        <div><strong>泛泛之交</strong><small>保持礼貌往来</small></div>
+        <div><strong>现实战友</strong><small>信得过，能合作互助</small></div>
+        <div id="friend-quadrant-points"></div>
+      </div>
+      <span class="memory-friend-axis-x">低 ← 人格可信度 → 高</span>
+    </div>
+  </section>
+</div>
+<p id="friend-map-status" class="muted" role="status">正在读取已保存的关系映射…</p>
+<p id="friend-map-selection" aria-live="polite" hidden></p>

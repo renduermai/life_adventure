@@ -1,0 +1,15 @@
+.spirit-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.spirit-panel { padding: 1rem; min-width: 0; overflow-wrap: anywhere; }
+.spirit-panel :is(h2, h3) { margin-block: 0 .65rem; }
+.spirit-actions { display: flex; gap: .55rem; flex-wrap: wrap; align-items: center; }
+.spirit-catalog { grid-column: 1 / -1; }
+.spirit-feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: .8rem; align-items: start; }
+.spirit-panel summary { cursor: pointer; }
+.spirit-feature-link { margin-top: .7rem; }
+#spirit-chat { margin-top: 1rem; }
+#spirit-transcript { display: grid; gap: .65rem; max-height: 27rem; overflow: auto; margin-bottom: .8rem; }
+.spirit-turn { border: 1px solid currentColor; border-radius: .6rem; padding: .65rem; }
+.spirit-turn p { margin: .3rem 0; white-space: pre-wrap; }
+.spirit-reminder { padding-block: .6rem; }
+.spirit-reminder p { margin-block: .35rem; }
+@media (max-width: 760px) { .spirit-layout { grid-template-columns: minmax(0, 1fr); } }
