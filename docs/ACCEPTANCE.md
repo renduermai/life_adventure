@@ -1,5 +1,9 @@
 # 验收与测试记录
 
+## 交互与数据联动升级（2026-11-27）
+
+0034已应用，旧59表465行原字段保持一致。默认197 passed/115 skipped；新增与整页4 passed，保障默认项浏览器补充1 passed；PG/浏览器/真实模型18 passed，首次保障浏览器等待条件失败已纠正，连同真实吸引子及真实杂念空输入3 passed。各组存在重复，不加总；未配置集成测试在默认命令中跳过，已单独启用本轮专项。真实杂念合成输入2269、输出347 Token。具体证据和边界见[LIFE_OS_INTERACTION_UPGRADE](LIFE_OS_INTERACTION_UPGRADE.md)。
+
 ## 第10步（2026-11-27）
 
 当前功能验收证据：默认197 passed/112 skipped，Life OS专项28 passed（启用当前真实模型合成），原模块回归6 passed，整页闭环1 passed，合成恢复1 passed（20表23行）。各组有重复用例，不加总为唯一数量。首次合成恢复外键顺序失败已纠正并重跑。异地备份/新机恢复未验证。详见[LIFE_OS_FINAL_ACCEPTANCE](LIFE_OS_FINAL_ACCEPTANCE.md)。

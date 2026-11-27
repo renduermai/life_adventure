@@ -38,7 +38,7 @@ def test_care_browser(notes):
    page.context.add_cookies([{'name':'camp_session','value':str(uid),'url':f'http://127.0.0.1:{port}'}]);page.goto(f'http://127.0.0.1:{port}/life-os')
    area=page.locator('#life-care');area.get_by_text('编辑保障清单与恢复阶段',exact=True).click()
    area.locator('form > textarea').fill('喝水')
-   area.get_by_role('button',name='保存清单与协议').click();expect(area).to_contain_text('喝水')
+   area.get_by_role('button',name='保存清单与协议').click();expect(area.locator('input[type=checkbox]')).to_have_count(1);expect(area).to_contain_text('喝水')
    area.locator('input[type=checkbox]').check();expect(area).to_contain_text('100%')
    page.reload();expect(area).to_contain_text('100%');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert not errors,errors;browser.close()
  finally:server.should_exit=True;thread.join(10)

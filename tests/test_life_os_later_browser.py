@@ -43,10 +43,18 @@ def test_life_os_later_features_responsive(notes):
             expect(page.locator('#layer-evidence')).to_contain_text('合成层次冲突依据')
             expect(page.locator('#life-mode-summary')).to_contain_text('AI 建议：黄色 · 稳定运行')
             page.locator('.life-os-layer-card button[data-model="life"][data-layer="生活秩序"]').click()
+            expect(page.locator('#layer-experiences')).to_be_visible()
+            expect(page.locator('.life-os-exp-form').last).to_be_visible()
+            page.locator('.life-os-layer-card button[data-model="life"][data-layer="生活秩序"]').click()
+            expect(page.locator('#layer-experiences')).to_be_hidden()
+            page.locator('.life-os-layer-card button[data-model="life"][data-layer="生活秩序"]').click()
             experience=page.locator('.life-os-exp-form').last
             experience.locator('input[name=occurred_on]').fill('2026-11-26')
             experience.locator('textarea[name=event]').fill('合成测试桌面杂乱')
             experience.locator('textarea[name=experience]').fill('合成测试先收拾一个角落')
+            page.once('dialog',lambda dialog:dialog.dismiss())
+            page.locator('.life-os-layer-card button[data-model="life"][data-layer="生活秩序"]').click()
+            expect(experience.locator('textarea[name=experience]')).to_have_value('合成测试先收拾一个角落')
             experience.get_by_role('button',name='保存经验').click()
             expect(page.locator('.life-os-exp-card')).to_contain_text('合成测试先收拾一个角落')
             page.locator('#life-mode-list button[data-mode="blue"]').click()
@@ -61,8 +69,16 @@ def test_life_os_later_features_responsive(notes):
             expect(page.locator('#life-daily-schedule')).to_contain_text('合成活动')
             expect(page.locator('#life-daily-schedule .life-os-time-label')).to_have_count(5)
             expect(page.locator('#life-daily-schedule .life-os-time-marker')).to_have_count(1)
+            from pathlib import Path
+            import tempfile
+            output=Path(tempfile.gettempdir())/'life-os-layers-update';output.mkdir(exist_ok=True)
+            for diagram in ['life-layers','need-layers']:
+                top=page.locator('#'+diagram+' li').nth(4).bounding_box();bottom=page.locator('#'+diagram+' li').nth(0).bounding_box()
+                assert top['y']<bottom['y'] and top['width']<bottom['width']
+            page.locator('.life-os-dual-layers').screenshot(path=str(output/'desktop.png'))
             page.set_viewport_size({'width':390,'height':844})
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+            page.locator('.life-os-dual-layers').screenshot(path=str(output/'mobile.png'))
             assert not errors,errors
             browser.close()
     finally:

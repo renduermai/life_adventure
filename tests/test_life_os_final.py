@@ -52,6 +52,7 @@ def test_whole_page_authorized_flow_and_serial_model_calls(notes,monkeypatch):
    expect(page.locator('#life-problem-list tbody tr td').first).to_have_text('1')
    page.locator('#life-care input[type=checkbox]').check();expect(page.locator('#life-care')).to_contain_text('100%')
    page.locator('#life-attractors svg circle[role=button]').click();expect(page.locator('#life-attractors')).to_contain_text('合成验收：又被拒了')
+   page.get_by_role('button',name='编辑场景',exact=True).click()
    page.clock.install();editor=page.locator('.life-os-scene-editor input[name=name]').first;editor.fill('尚未保存的编辑');page.clock.fast_forward(61000);expect(editor).to_have_value('尚未保存的编辑')
    page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert not errors,errors
    browser.close()

@@ -23,7 +23,7 @@ from .storage import validate_object_path, validate_bucket
 MAGIC = b'ACMEDIA1\n'
 MAX_MANIFEST = 8 * 1024 * 1024
 MAX_ENTRIES = 10_000
-SUPPORTED_MEDIA_REVISIONS = {'0022_memory_assets', '0024_person_analysis', '0025_memory_items', '0026_memory_wishes', '0027_item_entitlements', '0028_life_os_core', '0029_life_os_problems', '0030_life_os_layers_modes_scenes', '0031_life_os_schedules', '0032_life_os_care', '0033_life_os_attractors'}
+SUPPORTED_MEDIA_REVISIONS = {'0022_memory_assets', '0024_person_analysis', '0025_memory_items', '0026_memory_wishes', '0027_item_entitlements', '0028_life_os_core', '0029_life_os_problems', '0030_life_os_layers_modes_scenes', '0031_life_os_schedules', '0032_life_os_care', '0033_life_os_attractors', '0034_life_os_note_input', '0035_memory_friends', '0036_feature_visits', '0037_spirit_root', '0038_root_development'}
 
 
 def encryption_key(secret):

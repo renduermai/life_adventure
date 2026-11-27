@@ -1,5 +1,9 @@
 # 数据模型
 
+## 交互与数据联动升级（2026-11-27）
+
+0034将life_os_messages.content扩为TEXT，增加可空JSON input_note_ids记录用户选定的杂念来源。原59表465行旧字段迁移前后一致。source_ids校验最多20，散点和吸引子复用既有分析与事件，不新增散点存储表。长输入不能强行降级回VARCHAR(4000)，回退应保留新列。具体来源保护、默认示意与预算见[LIFE_OS_INTERACTION_UPGRADE](LIFE_OS_INTERACTION_UPGRADE.md)。
+
 ## 第9步（2026-11-27）
 
 0033新增life_os_attractor_runs：用户外键，scope/fingerprint，status/error_code，snapshot/result/usage JSON，UTC时间。snapshot只存来源哈希/范围与策略；原始数据不回写。

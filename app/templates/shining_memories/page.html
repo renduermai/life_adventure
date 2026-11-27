@@ -4,11 +4,12 @@
 <script src="{{ url_for('static', path='js/memory_interface.js') }}" defer></script>
 <div class="memory-intro"><p class="eyebrow">A PLACE TO REMEMBER</p><p>记住重要的人，珍惜陪伴的物，也为未来的期待留一页。</p></div>
 <nav class="memory-tabs" aria-label="回忆分类">
-{% for key, label in [('people','精神导师'),('items','武器工坊'),('wishes','心愿单')] %}
+{% for key, label in [('people','精神导师'),('friends','朋友搭子'),('items','武器工坊'),('wishes','心愿单')] %}
   <a href="/shining-memories/{{ key }}" class="memory-tab {% if section == key %}selected{% endif %}" {% if section == key %}aria-current="page"{% endif %}>{{ label }}</a>
 {% endfor %}
 </nav>
-{% if section == 'people' %}
+{% if section in ['people','friends'] %}
+{% if section == 'friends' %}{% include 'shining_memories/friend_map.html' %}{% endif %}
 {% include 'shining_memories/people.html' %}
 {% elif section == 'items' %}
 {% include 'shining_memories/items.html' %}

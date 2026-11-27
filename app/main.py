@@ -14,6 +14,7 @@ from app.core.logging import configure_logging
 
 logger = logging.getLogger("adventure_camp")
 PAGES = {
+    "artifact-spirit": {"title": "器灵", "subtitle": "了解营地里的工具，找回用得上的功能。", "symbol": "✺"},
     "camp": {"title": "营地门牌", "subtitle": "每一段冒险，都从这里出发。", "symbol": "⌂"},
     "journey": {"title": "冒险地图", "subtitle": "看清方向，再迈出下一步。", "symbol": "◇"},
     "settings": {"title": "营地设置", "subtitle": "让营地成为适合你的地方。", "symbol": "⚙"},
@@ -29,6 +30,7 @@ PAGES = {
     "startup": {"title": "启动状态", "subtitle": "先定位此刻，再决定下一步。", "symbol": "◈"},
     "life-os": {"title": "人生运行系统", "subtitle": "先看见此刻，再慢慢找到适合自己的节奏。", "symbol": "◌"},
     "spirit-stones": {"title": "灵石区", "subtitle": "AI 能力中心", "symbol": "◆"},
+    "spirit-root": {"title": "灵根", "subtitle": "从真实记录里看见反复出现的能力和信号。", "symbol": "❋"},
     "account": {"title": "角色账号", "subtitle": "这里是你的冒险身份。", "symbol": "◉"},
 }
 
@@ -78,8 +80,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(library_router)
     from app.modules.shining_memories.router import router as memory_router
     app.include_router(memory_router)
-    from app.modules.shining_memories.people.router import router as people_router
+    from app.modules.shining_memories.people.router import router as people_router, friends_router
     app.include_router(people_router)
+    app.include_router(friends_router)
+    from app.modules.shining_memories.people.friend_map import router as friend_map_router
+    app.include_router(friend_map_router)
     from app.modules.shining_memories.people.analysis_router import router as person_analysis_router
     app.include_router(person_analysis_router)
     from app.modules.shining_memories.items.router import router as memory_items_router
@@ -98,6 +103,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from app.modules.life_os.later_router import router as later_life_os_router
     app.include_router(later_life_os_router)
     from app.modules.life_os import schedule_models, care, attractors  # noqa: F401
+    from app.modules.artifact_spirit.router import router as artifact_spirit_router
+    app.include_router(artifact_spirit_router)
+    from app.modules.spirit_root.router import router as spirit_root_router
+    app.include_router(spirit_root_router)
     app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")
     templates = Jinja2Templates(directory=ROOT / "app/templates")
 
@@ -149,6 +158,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "pages": PAGES, "page": "camp", "current": PAGES["camp"],
                 "app_name": settings.app_name, "user": user, "data": data})
 
+    @app.get("/artifact-spirit", response_class=HTMLResponse)
+    def artifact_spirit(request: Request):
+        from app.modules.artifact_spirit.catalog import BY_KEY, entries, href
+        return templates.TemplateResponse(request=request, name="artifact_spirit.html", context={
+            "pages": PAGES, "page": "artifact-spirit", "current": PAGES["artifact-spirit"],
+            "app_name": settings.app_name, "features": entries(), "by_key": BY_KEY, "href": href,
+        })
+
+    @app.get("/spirit-root", response_class=HTMLResponse)
+    def spirit_root(request: Request):
+        return templates.TemplateResponse(request=request, name="spirit_root.html", context={
+            "pages": PAGES, "page": "spirit-root", "current": PAGES["spirit-root"],
+            "app_name": settings.app_name,
+        })
+
     @app.get("/journey", response_class=HTMLResponse)
     def journey(request: Request):
         return render(request, "journey")
@@ -162,7 +186,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get('/shining-memories/{section}', response_class=HTMLResponse)
     def shining_memories(request: Request, section: str = 'people'):
         from fastapi import HTTPException
-        if section not in {'people', 'items', 'wishes'}:
+        if section not in {'people', 'friends', 'items', 'wishes'}:
             raise HTTPException(404, '页面不存在')
         return templates.TemplateResponse(request=request, name='shining_memories/page.html', context={
             'pages': PAGES, 'page': 'shining-memories', 'current': PAGES['shining-memories'],

@@ -53,14 +53,19 @@ def notes(db,uid,offset=0,q=''):
     rows=list(db.scalars(query.order_by(DistractionNote.created_at.desc(),DistractionNote.id.desc()).offset(offset).limit(21)))
     return {'items':[{'id':r.id,'content':r.content,'created_at':r.created_at} for r in rows[:20]],'next_offset':offset+20 if len(rows)>20 else None}
 
+def selected_notes(db,uid,note_ids):
+    ids=list(dict.fromkeys(note_ids))
+    rows={r.id:r for r in db.scalars(select(DistractionNote).where(DistractionNote.user_id==uid,DistractionNote.id.in_(ids),DistractionNote.deleted_at.is_(None)))}
+    if len(rows)!=len(ids):raise AIError('not_found','部分杂念不存在、已删除或无权访问',404)
+    return [rows[nid] for nid in ids]
+
 def context(db,uid,note_ids,recent_ids):
     problem_rows=listing(db,uid)['items']
     # Explicitly selected notes only; no background scan or mutation of notes.
     selected=[]
-    for nid in dict.fromkeys(note_ids):
-        n=get_note(db,uid,nid)
-        if len(n.content)>1500:raise AIError('note_too_long','选中的杂念超过1500字，请选择较短记录；本次未发送',422)
+    for n in selected_notes(db,uid,note_ids):
         selected.append({'id':str(n.id),'content':n.content,'version':n.version})
+    if len(json.dumps(selected,ensure_ascii=False))>120000:raise AIError('context_too_large','所选杂念超过本轮模型上下文预算，请分批分析',422)
     ev=list(db.scalars(select(LifeEvent).where(LifeEvent.user_id==uid,LifeEvent.deleted_at.is_(None),valid_event()).order_by(LifeEvent.occurred_at.desc(),LifeEvent.id.desc()).limit(10)))
     linked=list(db.scalars(select(LifeEvent).join(EventSource,and_(EventSource.event_id==LifeEvent.id,EventSource.user_id==LifeEvent.user_id)).where(LifeEvent.user_id==uid,LifeEvent.deleted_at.is_(None),EventSource.message_id.in_(recent_ids))))
     events={e.id:e for e in linked+ev}
@@ -72,14 +77,14 @@ def context(db,uid,note_ids,recent_ids):
     for e in events.values():
         sources=list(db.scalars(select(EventSource.message_id).where(EventSource.user_id==uid,EventSource.event_id==e.id,EventSource.message_id.is_not(None))))
         exp=list(db.scalars(select(Experience).where(Experience.user_id==uid,Experience.event_id==e.id).order_by(Experience.created_at.desc()).limit(2)))
-        event_context.append({'id':str(e.id),'title':e.title,'date':e.occurred_at.isoformat(),'status':e.status,'version':e.version,'message_ids':list(map(str,sources))[-7:],'note_ids':list(map(str,db.scalars(select(EventSource.note_id).where(EventSource.user_id==uid,EventSource.event_id==e.id,EventSource.note_id.is_not(None))))),'experience':[{'kind':x.kind,'text':x.text[:180],'outcome':x.outcome} for x in exp]})
+        event_context.append({'id':str(e.id),'title':e.title,'date':e.occurred_at.isoformat(),'status':e.status,'version':e.version,'message_ids':list(map(str,sources))[-20:],'note_ids':list(map(str,db.scalars(select(EventSource.note_id).where(EventSource.user_id==uid,EventSource.event_id==e.id,EventSource.note_id.is_not(None))))),'experience':[{'kind':x.kind,'text':x.text[:180],'outcome':x.outcome} for x in exp]})
     result={'problems':[],'events':[],'selected_notes':selected}
     # The shared Gateway allows 24k characters. Keep this whole extension under 7k.
     for idx in range(max(len(problem_context),len(event_context))):
         for kind,candidates in [('events',event_context),('problems',problem_context)]:
             if idx>=len(candidates):continue
             result[kind].append(candidates[idx])
-            if len(json.dumps(result,ensure_ascii=False))>7000:result[kind].pop()
+            if len(json.dumps({'problems':result['problems'],'events':result['events']},ensure_ascii=False))>7000:result[kind].pop()
     return result
 
 def validate_notes(db,uid,ctx):
@@ -150,11 +155,13 @@ def sync(database,uid,aid,proposal,ctx):
     try:
         with database.transaction() as db:
             lock_user(db,uid);row=db.get(Analysis,aid)
+            if row is None or row.status != 'succeeded':return
             row.experience_status=apply(db,uid,row,proposal,ctx)
     except Exception as exc:
         code=exc.code if isinstance(exc,AIError) else 'experience_failed'
         with database.transaction() as db:
-            row=db.get(Analysis,aid);row.experience_status='failed';row.experience_error=code
+            row=db.get(Analysis,aid)
+            if row is not None:row.experience_status='failed';row.experience_error=code
         # No private source or exception message is logged.
         import logging
         logging.getLogger('adventure_camp.life_os').warning('experience_sync_failed code=%s type=%s',code,type(exc).__name__)

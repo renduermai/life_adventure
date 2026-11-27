@@ -53,3 +53,20 @@ class EventCreate(EventFields):
 
 class EventEdit(EventFields):
     expected_version:int=Field(ge=1)
+
+
+class FriendLocation(Strict):
+    base_location: str = Field(min_length=1, max_length=120)
+
+    @field_validator('base_location')
+    @classmethod
+    def validate_location(cls, value):
+        return PersonFields.nonblank(value)
+
+
+class FriendCreate(PersonCreate, FriendLocation):
+    pass
+
+
+class FriendEdit(PersonEdit, FriendLocation):
+    pass

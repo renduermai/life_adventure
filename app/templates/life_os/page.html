@@ -7,8 +7,8 @@
   <section class="life-os-welcome" aria-labelledby="life-os-title">
     <div class="life-os-welcome-copy">
       <span class="life-os-kicker">LIFE OPERATING SYSTEM · FIRST LOOK</span>
-      <h2 id="life-os-title">先定位此刻，再决定下一步。</h2>
-      <p>记录发生的事，积累尝试过的方法，找到适合自己的节奏。</p>
+      <h2 id="life-os-title">今日节奏</h2>
+      <div id="life-os-top-timeline"></div>
     </div>
     <div class="life-os-clock" aria-label="当前本地日期和时间">
       <span class="life-os-clock-label">此刻</span>
@@ -23,15 +23,15 @@
       <div class="life-os-section-heading"><span class="life-os-index">01</span><div><p class="life-os-eyebrow">START HERE</p><h2 id="life-os-entry-title">说说最近发生了什么</h2></div></div>
       <p class="life-os-description">描述正在发生的事情，先保存原文，再一起寻找一个容易开始的动作。分析中的状态数值只是可校准的主观估计。</p>
       <form id="life-os-form" class="form-stack">
-        <label for="life-os-input">此刻想说的话<textarea id="life-os-input" maxlength="4000" required rows="4" placeholder="最近发生了什么？你现在最在意什么？"></textarea></label>
-        <label class="life-os-consent"><input type="checkbox" id="life-os-consent">同意将本轮与必要的近期对话发送给灵石区所选模型分析（最多 6 轮）。</label>
-        <details class="life-note-options"><summary>选择杂念作为本次分析背景（默认不读取）</summary><label>查找杂念<input id="life-note-query" maxlength="100" type="search"></label><button type="button" id="life-note-search" class="button secondary">查询我的杂念</button><div id="life-note-list"></div><button type="button" id="life-note-more" class="button secondary" hidden>更多杂念</button><p class="hint">最多选择3条，每条不超过1500字。仅作只读背景，不自动累计事件次数；取消勾选后下次不再发送。</p></details>
+        <label for="life-os-input">此刻想说的话<textarea id="life-os-input" maxlength="4000" rows="4" placeholder="最近发生了什么？你现在最在意什么？"></textarea></label>
+        <label class="life-os-consent"><input type="checkbox" id="life-os-consent">同意将本轮与必要的近期对话发送给灵石区所选模型分析（最多 20 轮）。</label>
+        <details class="life-note-options"><summary>选择杂念作为本次分析背景（默认不读取）</summary><label>查找杂念<input id="life-note-query" maxlength="100" type="search"></label><button type="button" id="life-note-search" class="button secondary">查询我的杂念</button><div class="life-os-inline-actions"><button type="button" class="button secondary" id="life-note-select-all">全选全部杂念</button><button type="button" class="button secondary" id="life-note-clear-all">取消全选</button></div><div id="life-note-list"></div><button type="button" id="life-note-more" class="button secondary" hidden>更多杂念</button><p class="hint">可全选所有杂念；未填写想说的话时，使用勾选原文作为本轮输入。文字预算超限会明确提示分批，不静默漏选。取消勾选后下次不再作为杂念背景发送。</p></details>
         <button class="button secondary" id="life-os-send" type="submit">保存并分析</button>
       </form>
       <p id="life-os-feedback" role="status" aria-live="polite"></p>
       <div id="life-os-state"></div>
       <div id="life-os-history" aria-label="对话历史"></div>
-      <button class="button secondary" id="life-os-more" hidden>读取更早记录</button>
+      <button class="button secondary" id="life-os-more" type="button" aria-controls="life-os-history" hidden>查看更多</button>
     </section>
 
     <section class="life-os-panel life-os-problems" aria-labelledby="life-os-problems-title">
@@ -46,10 +46,10 @@
 
     <section class="life-os-panel life-os-wide" aria-labelledby="life-os-layers-title">
       <div class="life-os-section-heading"><span class="life-os-index">03</span><div><p class="life-os-eyebrow">TWO WAYS TO SEE LIFE</p><h2 id="life-os-layers-title">双五层视角</h2></div><span class="life-os-status">分析联动</span></div>
-      <p class="life-os-description">人生发展与需要层次可以同时存在，也允许不同层次之间出现张力。</p>
-      <div class="life-os-layers">
-        <div class="life-os-layer-card"><h3>人生发展</h3><ol id="life-layers"><li><button type="button" data-model="life" data-layer="生存基本盘">生存基本盘</button></li><li><button type="button" data-model="life" data-layer="生活秩序">生活秩序</button></li><li><button type="button" data-model="life" data-layer="精神生活">精神生活</button></li><li><button type="button" data-model="life" data-layer="职业发展">职业发展</button></li><li><button type="button" data-model="life" data-layer="长期发展">长期发展</button></li></ol></div>
-        <div class="life-os-layer-card"><h3>需要视角</h3><ol id="need-layers"><li><button type="button" data-model="need" data-layer="生理">生理</button></li><li><button type="button" data-model="need" data-layer="安全">安全</button></li><li><button type="button" data-model="need" data-layer="归属与爱">归属与爱</button></li><li><button type="button" data-model="need" data-layer="尊重">尊重</button></li><li><button type="button" data-model="need" data-layer="自我实现">自我实现</button></li></ol></div>
+      <p class="life-os-description">先保证低级需求是合理的，不必有压力</p>
+      <label class="life-os-layer-filter">展示历史散点<select id="life-layer-rounds"><option value="1">最近1轮</option><option value="5">最近5轮</option><option value="15">最近15轮</option><option value="30" selected>最近30轮</option></select></label><p class="hint">散点代表真实对话轮次，可悬停查看原文摘要；多层关联会同时展示。</p><div class="life-os-layers life-os-dual-layers">
+        <div class="life-os-layer-card"><h3>生活稳定层次图</h3><ol id="life-layers"><li><button type="button" data-model="life" data-layer="生存基本盘" aria-expanded="false" aria-controls="layer-experiences"><strong>第一层：生存基本盘</strong><small>睡眠、健康、情绪、生理需求</small></button></li><li><button type="button" data-model="life" data-layer="生活秩序" aria-expanded="false" aria-controls="layer-experiences"><strong>第二层：生活秩序</strong><small>房间、饮食、财务、日程</small></button></li><li><button type="button" data-model="life" data-layer="精神生活" aria-expanded="false" aria-controls="layer-experiences"><strong>第三层：精神生活</strong><small>音乐、街舞、社交、性生活</small></button></li><li><button type="button" data-model="life" data-layer="职业发展" aria-expanded="false" aria-controls="layer-experiences"><strong>第四层：职业发展</strong><small>求职、AI技术、项目积累</small></button></li><li><button type="button" data-model="life" data-layer="长期发展" aria-expanded="false" aria-controls="layer-experiences"><strong>第五层：长期发展</strong><small>投资、副业、个人创造</small></button></li></ol></div>
+        <div class="life-os-layer-card"><h3>马斯洛需求层次理论</h3><ol id="need-layers"><li><button type="button" data-model="need" data-layer="生理" aria-expanded="false" aria-controls="layer-experiences"><strong>第一层：生理</strong><small>睡眠、饮食、生理需要</small></button></li><li><button type="button" data-model="need" data-layer="安全" aria-expanded="false" aria-controls="layer-experiences"><strong>第二层：安全</strong><small>收入、稳定、健康保障</small></button></li><li><button type="button" data-model="need" data-layer="归属与爱" aria-expanded="false" aria-controls="layer-experiences"><strong>第三层：归属与爱</strong><small>亲密关系、友情、连接</small></button></li><li><button type="button" data-model="need" data-layer="尊重" aria-expanded="false" aria-controls="layer-experiences"><strong>第四层：尊重</strong><small>成就、自信、社会认可</small></button></li><li><button type="button" data-model="need" data-layer="自我实现" aria-expanded="false" aria-controls="layer-experiences"><strong>第五层：自我实现</strong><small>创造、成长、潜能实现</small></button></li></ol></div>
       </div>
       <p class="life-os-footnote" id="layer-summary">等待现有 AI 分析结果；点击任一层次查看和记录个人经验。</p>
       <p class="life-os-footnote" id="layer-conflict"></p>
@@ -80,7 +80,7 @@
       <label class="life-os-consent"><input type="checkbox" id="life-schedule-consent">本页允许将原始场景、状态估计和相关个人经验发送给所选模型，在对话、模式或场景变化后自动更新建议。</label>
       <button type="button" class="button secondary" id="life-schedule-generate">生成 / 更新每日与每周建议</button>
       <p id="life-schedule-feedback" role="status" aria-live="polite"></p><div id="life-schedule-daily"></div>
-      <details><summary>建议版本历史</summary><div id="life-schedule-history"></div></details>
+      <div id="life-schedule-history" hidden></div>
     </section>
 
     <section class="life-os-panel" aria-labelledby="life-os-weekly-title">
@@ -97,7 +97,7 @@
 
     <section class="life-os-panel life-os-wide" aria-labelledby="life-os-attractors-title">
       <div class="life-os-section-heading"><span class="life-os-index">08</span><div><p class="life-os-eyebrow">WHAT PULLS YOUR ATTENTION</p><h2 id="life-os-attractors-title">环境吸引子</h2></div><span class="life-os-status">历史分析</span></div>
-      <p class="life-os-description">从已确认、可追溯事件中观察环境与行为线索。每轮最多12个有效事件，超过时请缩小日期范围。</p>
+      <p class="life-os-description">从已确认、可追溯事件中观察环境与行为线索。每轮最多50个有效事件，并读取近期对话与相关记录；超过预算时请缩小范围。</p>
       <div id="life-attractors"></div>
     </section>
   </div>

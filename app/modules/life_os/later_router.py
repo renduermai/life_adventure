@@ -154,7 +154,7 @@ async def care_write(request:Request,action:str):
 async def attractors_api(request:Request,action:str):
     from . import attractors
     try:
-        data=await body(request,attractors.RequestData);uid=await run_in_threadpool(user_id,request)
+        data=await body(request,attractors.RequestData,max_bytes=1048576);uid=await run_in_threadpool(user_id,request)
         if action=='read':return response(await run_in_threadpool(attractors.read,request.app.state.database,uid,data))
         if action=='analyze':return response(await run_in_threadpool(attractors.generate,request.app.state.database,request.app.state.settings,uid,data))
         raise AIError('not_found','操作不存在',404)
@@ -164,6 +164,6 @@ async def attractors_api(request:Request,action:str):
 async def attractor_event(request:Request,eid:UUID):
     from . import attractors
     try:
-        data=await body(request,attractors.RequestData);uid=await run_in_threadpool(user_id,request)
+        data=await body(request,attractors.RequestData,max_bytes=1048576);uid=await run_in_threadpool(user_id,request)
         return response(await run_in_threadpool(attractors.event_detail,request.app.state.database,uid,eid,data))
     except AIError as exc:return error_response(request,exc)

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/artifact_spirit.css') }}">
+<script src="{{ url_for('static', path='js/artifact_spirit.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="spirit-layout">
+  <section class="card spirit-panel" aria-labelledby="spirit-heading">
+    <h2 id="spirit-heading">AI 器灵</h2>
+    <p id="spirit-summary" aria-live="polite">根据功能区的近期打开次数，看看哪些工具可能用得上。</p>
+    <div class="spirit-actions">
+      <button type="button" class="button secondary" id="spirit-refresh">生成使用提醒</button>
+      <button type="button" class="button primary" id="spirit-open-chat" aria-controls="spirit-chat" aria-expanded="false">向器灵提问</button>
+    </div>
+    <section id="spirit-chat" hidden aria-labelledby="spirit-chat-heading">
+      <h3 id="spirit-chat-heading">本次对话</h3>
+      <p class="muted">问题与最近四轮对话会发给灵石区所选模型。刷新或离开页面后，聊天正文会清空。</p>
+      <div id="spirit-transcript" role="log" aria-label="本次对话"></div>
+      <form id="spirit-question-form" class="form-stack">
+        <label>你的问题<textarea id="spirit-question" maxlength="700" rows="2" required placeholder="例如：主线、副本和专注沙漏怎么配合？"></textarea></label>
+        <div class="spirit-actions">
+          <button type="submit" class="button primary">发送</button>
+          <button type="button" class="button secondary" id="spirit-clear">清空本次对话</button>
+        </div>
+        <p id="spirit-chat-status" class="muted" role="status"></p>
+      </form>
+    </section>
+  </section>
+  <aside class="card spirit-panel" aria-labelledby="spirit-reminders-heading">
+    <h2 id="spirit-reminders-heading">最近可以用用</h2>
+    <div id="spirit-reminders" aria-live="polite"><p class="muted">正在读取近期使用情况…</p></div>
+  </aside>
+  <section class="spirit-catalog" aria-labelledby="spirit-catalog-heading">
+    <h2 id="spirit-catalog-heading">功能导览</h2>
+    <p class="muted" id="spirit-usage-status" role="status">按近 30 天及累计打开次数统计。</p>
+    <div class="spirit-feature-grid">
+      {% for feature in features %}
+      <article class="card spirit-panel" data-spirit-feature="{{ feature.key }}">
+        <h3>{{ feature.title }}</h3>
+        <p>{{ feature.summary }}</p>
+        <p class="muted" data-spirit-count></p>
+        <details>
+          <summary>详情</summary>
+          <p>{{ feature.details }}</p>
+          {% if feature.changes %}
+          <h4>已上线的变化</h4>
+          <ul>{% for change in feature.changes %}<li>{{ change }}</li>{% endfor %}</ul>
+          {% endif %}
+          {% if feature.related %}
+          <h4>相关功能</h4>
+          <ul>{% for key in feature.related %}<li><a href="{{ href(key) }}">{{ by_key[key].title }}</a></li>{% endfor %}</ul>
+          {% endif %}
+        </details>
+        <a class="button secondary spirit-feature-link" href="{{ feature.href }}">进入{{ feature.title }}</a>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

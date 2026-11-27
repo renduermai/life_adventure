@@ -40,6 +40,42 @@ def test_evidence_cache_incremental_failure_and_owner(notes,monkeypatch):
  assert c.post(url+'events/'+eid,headers=H,json=p).status_code==404
  c.cookies.clear();assert c.post(url+'read',headers=H,json=p).status_code==401
 
+
+def test_all_history_keeps_earlier_valid_patterns(notes, monkeypatch):
+ c,s,uid,_,_=notes
+ older_event, older_message = seed(s,uid,25)
+ new_event,new_message=seed(s,uid)
+ def model(self,user,purpose,messages,request_id,**kw):
+  data=json.loads(messages[1]['content'])
+  row=data['events'][0]
+  result=response_for([row])
+  result.patterns[0].name='较早循环' if row['id']==older_event else '近期循环'
+  link=result.patterns[0].links[0]
+  link.quote='模型改写的引文'; link.evidence_id='S1'
+  if row['id']==new_event:
+   result.current_pattern=0;result.current_event_id=UUID(new_event)
+   result.patterns[0].links.append(link.model_copy(update={'source_id':uuid4()}))
+  return {'content':result,'usage':None}
+ monkeypatch.setattr(AIService,'generate',model)
+ today=datetime.now(ZoneInfo('Asia/Shanghai')).date()
+ p=payload()
+ url='/api/life-os/attractors/'
+ old_range=p|{'start':str(today-timedelta(days=30)),'end':str(today-timedelta(days=20))}
+ assert c.post(url+'analyze',headers=H,json=old_range).status_code==200
+ assert c.post(url+'analyze',headers=H,json=p).status_code==200
+ all_range=p|{'start':'1900-01-01','all_history':True}
+ result=c.post(url+'read',headers=H,json=all_range).json()['current']['result']
+ assert [item['name'] for item in result['patterns']]==['近期循环','较早循环']
+ assert result['current_pattern']==0
+ assert len(result['patterns'][0]['links'])==1 and result['patterns'][0]['links'][0]['quote'].startswith('合成事件')
+ assert c.post(url+'events/'+older_event,headers=H,json=all_range).status_code==200
+ assert c.patch('/api/life-os/messages/'+older_message,headers=H,json={'content':'更正的原文'}).status_code==200
+ remaining=c.post(url+'read',headers=H,json=all_range).json()['current']['result']
+ assert [item['name'] for item in remaining['patterns']]==['近期循环']
+ assert c.delete('/api/life-os/messages/'+new_message,headers=H).status_code==200
+ assert c.get('/api/life-os/messages').json()['items'][0]['content']=='更正的原文'
+
+
 def test_attractor_live(notes,monkeypatch):
  if os.getenv('LIFE_OS_LIVE')!='1':pytest.skip('真实模型未显式启用')
  c,s,uid,_,app=notes;seed(s,uid);seed(s,uid,2);settings=load_settings();engine=create_engine(postgres_url(settings.database_url.get_secret_value()),hide_parameters=True)
@@ -56,6 +92,11 @@ def test_attractor_browser(notes,monkeypatch):
  import socket,threading,time,uvicorn
  from playwright.sync_api import sync_playwright,expect
  c,s,uid,_,app=notes;seed(s,uid)
+ from app.modules.distractions.models import DistractionNote
+ with s.begin() as db:
+  for i in range(5):
+   db.add(Message(user_id=uid,request_id=uuid4(),content=f'独立合成历史 {i}'))
+  db.add(DistractionNote(user_id=uid,create_request_id=uuid4(),create_fingerprint='synthetic',content='供吸引子勾选的合成杂念'))
  def model(self,user,purpose,messages,request_id,**kw):return {'content':response_for(json.loads(messages[1]['content'])['events']),'usage':None}
  monkeypatch.setattr(AIService,'generate',model)
  with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
@@ -66,7 +107,24 @@ def test_attractor_browser(notes,monkeypatch):
    time.sleep(.05)
   with sync_playwright() as pw:
    browser=pw.chromium.launch(channel='msedge',headless=True);page=browser.new_page(viewport={'width':1366,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.context.add_cookies([{'name':'camp_session','value':str(uid),'url':f'http://127.0.0.1:{port}'}]);page.goto(f'http://127.0.0.1:{port}/life-os')
-   area=page.locator('#life-attractors');area.locator('input[type=checkbox]').check();area.get_by_role('button',name='分析所选时间周期').click();dot=area.locator('svg circle[role=button]');expect(dot).to_have_count(1,timeout=30000);dot.click();expect(area).to_contain_text('合成恢复事件');area.get_by_text('完整原始记录',exact=False).click();expect(area).to_contain_text('合成事件：学习受挫时');page.reload();expect(dot).to_have_count(1,timeout=30000);page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert not errors,errors;browser.close()
+   history=page.locator('#life-os-history article')
+   expect(history).to_have_count(3)
+   page.get_by_role('button',name='查看更多',exact=True).click()
+   expect(history).to_have_count(6)
+   page.get_by_role('button',name='收起历史',exact=True).click()
+   expect(history).to_have_count(3)
+   first=history.first
+   first.get_by_role('button',name='编辑',exact=True).click()
+   first.get_by_role('textbox',name='编辑历史原文').fill('浏览器编辑后的合成历史')
+   first.get_by_role('button',name='保存修改').click()
+   expect(first).to_contain_text('浏览器编辑后的合成历史')
+   page.once('dialog',lambda dialog:dialog.accept())
+   first.get_by_role('button',name='删除',exact=True).click()
+   expect(page.locator('#life-os-history')).not_to_contain_text('浏览器编辑后的合成历史')
+   area=page.locator('#life-attractors')
+   area.get_by_text('选择本次分析要参考的杂念（可多选）').click()
+   expect(area.get_by_text('供吸引子勾选的合成杂念')).to_be_visible()
+   area.locator('.life-os-consent input').check();area.get_by_role('button',name='分析所选时间周期').click();dot=area.locator('svg circle[role=button]');expect(dot).to_have_count(1,timeout=30000);dot.click();expect(area).to_contain_text('合成恢复事件');area.get_by_text('完整原始记录',exact=False).click();expect(area).to_contain_text('合成事件：学习受挫时');page.reload();expect(dot).to_have_count(1,timeout=30000);page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert not errors,errors;browser.close()
  finally:server.should_exit=True;thread.join(10)
 
 def test_invalid_sources_and_missing_evidence_rejected():

@@ -45,7 +45,7 @@ check-storage检查原私有桶，不创建桶。不要把init-bucket、cleanup�
 
 ### 数据库
 
-人生运行系统完整数据必须包含全部life_os_*表（当前0028–0033），并保留原AI_ENCRYPTION_KEYS。页面固定名单导出不包含全部模块，不能用作完整恢复。
+人生运行系统完整数据必须包含全部life_os_*表（当前0028–0034），并保留原AI_ENCRYPTION_KEYS。页面固定名单导出不包含全部模块，不能用作完整恢复。
 
 需要兼容源PostgreSQL版本的pg_dump/pg_restore。当前电脑审计时两者不在PATH，须另行安装匹配客户端。不要把SQLAlchemy的+psycopg URL原样交给PostgreSQL命令。
 
@@ -72,7 +72,7 @@ pg_restore --no-owner --no-privileges --exit-on-error --dbname=postgres 'X:\priv
 if ($LASTEXITCODE -ne 0) { throw '恢复未完成，保留原备份并排查，不启动写入' }
 ```
 
-Supabase自带扩展和权限可能造成冲突，须在测试目标验证，不删除平台schema解决冲突。完整dump已含结构和alembic_version，不能先建同名应用表再盲目导入。恢复后检查备份所记录的版本；当前项目要求0033_life_os_attractors；如需要从纯空库只建结构才执行alembic upgrade head，但这不会还原私人数据。不要导入系统角色或随意覆盖Supabase托管schema。
+Supabase自带扩展和权限可能造成冲突，须在测试目标验证，不删除平台schema解决冲突。完整dump已含结构和alembic_version，不能先建同名应用表再盲目导入。恢复后检查备份所记录的版本；当前项目要求0038_root_development，完整数据库备份包含朋友资料、事件、关系映射、功能区使用统计以及灵根原文与证据；如需要从纯空库只建结构才执行alembic upgrade head，但这不会还原私人数据。不要导入系统角色或随意覆盖Supabase托管schema。
 
 ### 图片
 

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from uuid import UUID, uuid4
-from sqlalchemy import String, Text, Integer, Date, DateTime, Boolean, ForeignKey, ForeignKeyConstraint, UniqueConstraint, CheckConstraint, func, text
+from sqlalchemy import String, Text, Integer, Date, DateTime, Boolean, JSON, ForeignKey, ForeignKeyConstraint, UniqueConstraint, CheckConstraint, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -12,10 +12,14 @@ class MemoryPerson(Base):
         UniqueConstraint('user_id','create_request_id',name='uq_memory_person_request'),
         CheckConstraint("contact_preference IN ('unspecified','willing','hesitant','no_contact')",name='ck_memory_contact_preference'),
         CheckConstraint('version >= 1',name='ck_memory_person_version'),
+        CheckConstraint("(kind = 'mentor' AND base_location IS NULL) OR (kind = 'friend' AND base_location IS NOT NULL AND length(trim(base_location)) > 0)", name='ck_memory_person_kind_location'),
     )
     id: Mapped[UUID] = mapped_column(primary_key=True,default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'),index=True)
     name: Mapped[str] = mapped_column(String(120))
+    kind: Mapped[str] = mapped_column(String(8), server_default='mentor')
+    base_location: Mapped[str | None] = mapped_column(String(120))
+    friend_mapping: Mapped[dict | None] = mapped_column(JSON)
     relationship: Mapped[str] = mapped_column(String(120))
     precious_moments: Mapped[str] = mapped_column(Text,default='')
     manual_contact_date: Mapped[date|None] = mapped_column(Date)

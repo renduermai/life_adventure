@@ -1,0 +1,65 @@
+.root-panel { padding: 1rem; overflow-wrap: anywhere; }
+.root-panel h2 { margin-block: 0 .7rem; }
+.root-probe-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.root-analysis-state { font-size: .85rem; font-weight: 600; color: var(--muted); }
+.root-analysis-state[data-state="succeeded"] { color: var(--accent); }
+.root-analysis-state[data-state="failed"] { color: #d28c60; }
+.root-columns { display: grid; gap: 1rem; grid-template-columns: repeat(2,minmax(0,1fr)); margin-block: 1rem; }
+.root-actions, .root-label-line { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.root-actions p { margin: 0; }
+.root-item { padding-block: .8rem; }
+.root-item + .root-item { border-top: 1px solid var(--line, #72819860); }
+.root-item h3 { margin-block: 0; }
+.root-item p { margin-block: .45rem; }
+.root-label { font: inherit; font-weight: 650; color: inherit; background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.root-label:hover { text-decoration: underline; }
+.root-pill { font: inherit; font-size: .8rem; color: inherit; border: 1px solid currentColor; background: transparent; border-radius: 2rem; padding: .18rem .55rem; cursor: pointer; }
+.root-pill[data-strength="强"], .root-pill[data-strength="较强"], .root-pill[data-strength="已有外部信号"] { color: var(--accent, #48a895); }
+.root-pill[data-strength="待验证"] { opacity: .8; }
+.root-quote { margin: .65rem 0; padding: .3rem .7rem; border-inline-start: 3px solid var(--accent, #48a895); white-space: pre-wrap; }
+.root-original-view { white-space: pre-wrap; overflow-wrap: anywhere; }
+.root-recent { margin-top: 1rem; }
+.root-recent summary { cursor: pointer; }
+#root-dialog { width: min(43rem,calc(100vw - 2rem)); max-height: 85vh; color: inherit; }
+#root-dialog::backdrop { background: #05090dd0; }
+.root-dialog-header { display: flex; gap: .5rem; justify-content: space-between; align-items: center; position: sticky; top: -1rem; background: inherit; padding-block: .4rem; }
+#root-review { margin-block: 1rem; }
+@media (max-width: 760px) { .root-columns { grid-template-columns: minmax(0,1fr); } }
+
+.root-development { margin-block: 1rem; }
+.root-totem { max-width: 660px; margin: 0 auto; padding-block: .65rem; text-align: center; }
+.root-totem-map { position: relative; display: grid; grid-template: repeat(3, minmax(5rem, auto)) / repeat(3,minmax(0,1fr)); align-items: center; gap: .45rem; }
+.root-totem-map svg { position: absolute; width: 100%; height: 100%; inset: 0; pointer-events: none; }
+.root-totem-map path { fill: none; stroke: #9270da; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.root-totem-node { display: grid; align-content: center; gap: .2rem; position: relative; border: 1px solid #9270da; border-radius: .9rem; padding: .55rem .2rem; background: var(--card, var(--panel, Canvas)); color: inherit; }
+.root-totem-node span, .root-totem-node button { font-size: .8rem; }
+.root-totem-map [data-base-totem="感知力"] { grid-area: 1 / 2; }
+.root-totem-map [data-base-totem="价值判断"] { grid-area: 2 / 1; }
+.root-totem-map [data-base-totem="联想力"] { grid-area: 2 / 3; }
+.root-totem-center { grid-area: 2 / 2; border-width: 2px; border-radius: 2rem; padding-block: .9rem; background: color-mix(in srgb, var(--purple) 20%, var(--card)); }
+.root-totem-map [data-base-totem="系统力"] { grid-area: 3 / 1; }
+.root-totem-map [data-base-totem="抽象力"] { grid-area: 3 / 3; }
+.root-totem-extra { display: flex; gap: .55rem; flex-wrap: wrap; justify-content: center; margin-top: .7rem; border-top: 1px dashed #9270da; padding-top: .65rem; }
+.root-totem-extra[hidden] { display: none; }
+.root-totem-added { padding: .45rem .7rem; cursor: pointer; }
+.root-totem-outcome { margin: .8rem auto; padding: .6rem .4rem; border: 1px solid #4aab9e; border-radius: .75rem; background: #4aab9e20; }
+.root-compare { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .55rem; margin-block: .6rem; }
+.root-compare > div { border-radius: .55rem; padding: .65rem; }
+.root-advantage { background: #48a89522; border: 1px solid #48a89588; }
+.root-risk { background: #b5824f22; border: 1px solid #b5824f88; }
+.root-directions { margin-bottom: 0; }
+.root-directions h4 { margin-block: .45rem; }
+
+.root-record-actions { margin-block: .4rem; }
+.root-record-actions .button { min-height: 32px; padding: .25rem .6rem; }
+.root-delete { color: var(--text); }
+.root-delete:hover { border-color: #d28c60; }
+.root-totem-node .root-record-actions { justify-content: center; }
+
+.root-record-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+.root-record-heading > :first-child { min-width: 0; }
+.root-record-actions { flex: 0 0 auto; flex-wrap: nowrap; justify-content: flex-end; margin-block: 0; gap: .55rem; }
+.root-text-action { background: none; border: 0; padding: .12rem 0; color: var(--accent); font: inherit; font-size: .75rem; white-space: nowrap; }
+.root-text-action.root-delete { color: #ee8888; }
+:root[data-theme=light] .root-text-action.root-delete { color: #a83139; }
+.root-text-action:hover { text-decoration: underline; }

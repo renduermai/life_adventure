@@ -1,23 +1,23 @@
 from typing import Annotated, Literal
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 class Strict(BaseModel):
     model_config = ConfigDict(extra='forbid', hide_input_in_errors=True)
 
 class Send(Strict):
     request_id: UUID
-    content: str = Field(min_length=1,max_length=4000)
-    @field_validator('content')
-    @classmethod
-    def nonblank(cls,value):
-        if not value.strip() or '\x00' in value: raise ValueError('请输入有效文字')
-        return value
+    content: str = Field(default='',max_length=4000)
+    note_ids: list[UUID] = Field(default_factory=list)
+    @model_validator(mode='after')
+    def valid_input(self):
+        if '\x00' in self.content or (not self.content.strip() and not self.note_ids):raise ValueError('请填写想说的话或勾选杂念')
+        return self
 
 class Analyze(Strict):
     request_id: UUID
     consent_external: bool = Field(strict=True)
-    note_ids: list[UUID] = Field(default_factory=list,max_length=3)
+    note_ids: list[UUID] = Field(default_factory=list)
 
 class Estimate(Strict):
     value: int | None = Field(ge=0,le=100,strict=True)
@@ -40,10 +40,20 @@ class Output(Strict):
     suggested_mode: Literal['green','yellow','red','blue','unknown']
     schedule_update_needed: bool = Field(strict=True)
     attractor_update_needed: bool = Field(strict=True)
-    source_ids: list[UUID] = Field(min_length=1,max_length=7)
+    source_ids: list[UUID] = Field(min_length=1,max_length=20)
 
 class Correct(Strict):
     request_id: UUID
     energy: int | None = Field(ge=0,le=100,strict=True)
     bandwidth: int | None = Field(ge=0,le=100,strict=True)
     order: int | None = Field(ge=0,le=100,strict=True)
+
+
+class EditMessage(Strict):
+    content: str = Field(min_length=1, max_length=120000)
+
+    @model_validator(mode='after')
+    def validate_content(self):
+        if not self.content.strip() or chr(0) in self.content:
+            raise ValueError('请输入有效原文')
+        return self

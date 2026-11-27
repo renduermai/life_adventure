@@ -41,6 +41,10 @@ from app.modules.life_os import care  # noqa: F401
 
 from app.modules.life_os import attractors  # noqa: F401
 
+from app.modules.artifact_spirit import models as feature_visit_models  # noqa: F401
+
+from app.modules.spirit_root import models as spirit_root_models  # noqa: F401
+
 config = context.config
 
 

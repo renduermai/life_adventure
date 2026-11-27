@@ -9,8 +9,9 @@
   <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}">
   {% block extra_head %}{% endblock %}
   <script src="{{ url_for('static', path='js/app.js') }}" defer></script>
+  <script src="{{ url_for('static', path='js/feature_visit.js') }}" defer></script>
 </head>
-<body>
+<body data-feature="{{ page if request.method == 'GET' else '' }}">
   <a class="skip" href="#main">跳转到内容</a>
   <aside class="sidebar" id="sidebar" aria-label="主导航">
     <a class="brand" href="/" aria-label="人生冒险之旅首页"><span class="brand-mark">△</span><span>人生冒险之旅<small>ADVENTURE CAMP</small></span></a>
