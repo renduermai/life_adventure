@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+{% if page == 'camp' %}
+<section class="hero">
+  <div class="hero-copy"><span class="pill">序章 / 营地初建</span><h2>把人生，过成<br>属于你的冒险。</h2><p>让目标有方向，让行动有记录。<br>从小小的一步开始，慢慢看见成长。</p><a class="button primary" href="/journey">查看冒险地图 <span aria-hidden="true">↗</span></a></div>
+  <svg class="landscape" viewBox="0 0 580 360" role="img" aria-label="群山、月亮与营地的插画">
+    <defs><linearGradient id="mountain" x2="0" y2="1"><stop stop-color="#458d91"/><stop offset="1" stop-color="#183b4d"/></linearGradient><linearGradient id="tent" x2="1" y2="1"><stop stop-color="#b4edd2"/><stop offset="1" stop-color="#4fb7a4"/></linearGradient></defs>
+    <circle cx="414" cy="88" r="38" fill="#b5d8c5" opacity=".82"/><circle cx="414" cy="88" r="61" fill="#a1dbcc" opacity=".035"/>
+    <g fill="#a0c6c9" opacity=".6"><circle cx="162" cy="70" r="2"/><circle cx="288" cy="40" r="1.5"/><circle cx="496" cy="146" r="2"/><circle cx="350" cy="120" r="1.4"/><circle cx="532" cy="46" r="1.5"/></g>
+    <path d="M0 310 151 113 234 229 332 131 580 329V360H0Z" fill="#183144"/>
+    <path d="m30 340 210-202 94 121 68-61 178 158H30Z" fill="url(#mountain)"/>
+    <path d="m170 177 40-39 33 42-25-9-12 8-10-13Z" fill="#91b4b7" opacity=".7"/>
+    <path d="M0 317Q115 273 237 319T580 310V360H0Z" fill="#102b35"/>
+    <path d="M0 348Q190 303 580 354V360H0Z" fill="#0c242d"/>
+    <g fill="#244d4e"><path d="m80 235-22 56h14l-25 36h65l-25-36h15Z"/><path d="m485 245-20 49h12l-22 33h60l-23-33h12Z"/><path d="m527 222-24 60h16l-28 45h75l-28-45h15Z"/></g>
+    <path d="m273 323 53-84 66 85Z" fill="url(#tent)"/><path d="m326 239 19 85h47Z" fill="#387e76"/><path d="m299 323 27-55 18 56Z" fill="#163e43"/>
+    <ellipse cx="240" cy="334" rx="30" ry="5" fill="#e9c79a" opacity=".09"/><path d="m234 329 8-22 6 22Z" fill="#f1c38c"/><path d="m232 332 18-3m-17-1 17 5" stroke="#b28e6a" stroke-width="3"/>
+  </svg>
+</section>
+<div class="section-heading"><h2>下一步，从这里开始</h2><span>为真实行动，准备一个好起点</span></div>
+<div class="cards three">
+  <article class="card"><span class="card-icon teal">◇</span><span class="card-number">01</span><h3>找到你的主线</h3><p>把长远愿望变成清晰目标，再拆成可以迈出的每一步。</p><a class="coming" href="/quests">进入主线与里程碑 →</a></article>
+  <article class="card"><span class="card-icon purple">◷</span><span class="card-number">02</span><h3>留下一段专注</h3><p>记录你真正投入的时间，让每次努力都有迹可循。</p><span class="coming"><a href="/focus">进入专注与手记 →</a></span></article>
+  <article class="card"><span class="card-icon amber">✧</span><span class="card-number">03</span><h3>看见自己的成长</h3><p>积累行动，回顾成果。成长的意义，由你自己定义。</p><span class="coming"><a href="/growth">查看成长与奖励 →</a></span></article>
+</div>
+<section class="notice"><span class="notice-icon">⌁</span><div><h3>你的营地已经有了起点</h3><p>登录角色账号后，可以查看主线、副本和成长数据。</p></div><a href="/account" class="text-link">创建角色账号 →</a></section>
+{% elif page == 'journey' %}
+<section class="intro-panel"><span class="pill">路线指南</span><h2>一步一步，把营地建起来。</h2><p class="muted">这是一份建设路线，不是你的个人成长进度。每一阶段都经过验证，再继续前行。</p></section>
+<div class="roadmap">
+  {% for number, title, description in [('0','建立基础营地','本地服务、页面布局、数据库连接基础与工程规范。'),('1','开始真实行动','创建角色与主线，拆解任务，记录专注，积累经验。'),('2','与 AI 一起规划','任务拆解、角色身份、周计划与复盘。'),('3','让成长清晰可见','日历、统计、能力雷达、成就与心愿。'),('4','扩展你的冒险','装备、账本、线索与探索模式。'),('5','随时回到营地','正式部署，让不同设备访问同一份数据。')] %}
+  <article class="roadmap-step {% if number == '0' %}current-step{% endif %}"><span class="step-number">{{ number }}</span><div><h2>{{ title }}</h2><p>{{ description }}</p></div><span class="outline-tag">{{ '当前阶段' if number == '0' else '尚未开放' }}</span></article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="settings-grid">
+  <section class="card"><p class="eyebrow">APPEARANCE</p><h2>营地外观</h2><p class="muted">选择此刻让你感到舒适的颜色。</p><div class="theme-options"><button class="theme-choice" data-set-theme="dark" aria-pressed="false"><span class="theme-swatch dark-swatch"></span>深夜营地</button><button class="theme-choice" data-set-theme="light" aria-pressed="false"><span class="theme-swatch light-swatch"></span>晨光营地</button></div><p class="hint">外观偏好仅保存在当前浏览器。</p></section>
+  <section class="card"><p class="eyebrow">CAMP STATUS</p><h2>连接状态</h2><dl class="status-list"><div><dt>当前时区</dt><dd>{{ timezone }}</dd></div><div><dt>数据库配置</dt><dd>{{ '已提供 · 待检查连接' if database_configured else '尚未配置' }}</dd></div></dl><button class="button secondary" id="check-database">检查数据库连接</button><p id="database-result" class="hint" role="status" aria-live="polite">{{ '点击检查以验证连接与迁移状态。' if database_configured else '数据库尚未准备，基础页面仍可预览。' }}</p></section>
+</div>
+<section class="notice"><span class="notice-icon">◇</span><div><h3>这里还会慢慢丰富起来</h3><p>奖励规则和数据导出将在对应模块开放。</p></div><a href="/account" class="text-link">角色账号 →</a></section>
+{% endif %}
+{% endblock %}

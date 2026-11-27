@@ -1,0 +1,1 @@
+"""Reward ledger domain."""

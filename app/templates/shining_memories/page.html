@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/shining_memories.css') }}">
+<script src="{{ url_for('static', path='js/memory_interface.js') }}" defer></script>
+<div class="memory-intro"><p class="eyebrow">A PLACE TO REMEMBER</p><p>记住重要的人，珍惜陪伴的物，也为未来的期待留一页。</p></div>
+<nav class="memory-tabs" aria-label="回忆分类">
+{% for key, label in [('people','精神导师'),('items','武器工坊'),('wishes','心愿单')] %}
+  <a href="/shining-memories/{{ key }}" class="memory-tab {% if section == key %}selected{% endif %}" {% if section == key %}aria-current="page"{% endif %}>{{ label }}</a>
+{% endfor %}
+</nav>
+{% if section == 'people' %}
+{% include 'shining_memories/people.html' %}
+{% elif section == 'items' %}
+{% include 'shining_memories/items.html' %}
+{% elif section == 'wishes' %}
+{% include 'shining_memories/wishes.html' %}
+{% else %}
+<section class="card memory-placeholder">
+{% if section == 'people' %}
+  <p class="eyebrow">PEOPLE WHO MATTER</p><h2>记住那些重要的人</h2>
+  <p>曾经给予的机会、陪伴和鼓励，都值得在这里留下位置。</p>
+  <p class="muted">人物记录与事件时间线将在下一步开放。</p>
+{% elif section == 'items' %}
+  <p class="eyebrow">THINGS THAT STAY</p><h2>看见陪伴的价值</h2>
+  <p>记录拥有的物品，慢慢看见长期使用的价值。</p>
+  <p class="muted">物品记录、图片和日均成本将在武器工坊步骤开放。</p>
+{% else %}
+  <p class="eyebrow">WISHES FOR TOMORROW</p><h2>给未来的期待留个位置</h2>
+  <p>记住想拥有它的原因，也记住愿望随时间发生的变化。</p>
+  <p class="muted">心愿记录、图片与价格历史将在心愿单步骤开放。</p>
+{% endif %}
+</section>
+{% endif %}
+{% endblock %}

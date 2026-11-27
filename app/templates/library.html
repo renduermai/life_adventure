@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/library.css') }}">
+<script src="{{ url_for('static', path='js/library.js') }}" defer></script>
+<div class="library-layout"><section class="card library-panel" aria-labelledby="library-heading">
+  <div class="library-intro"><p class="eyebrow">YOUR LINK SHELF</p><h2 id="library-heading">把有用的链接收在这里</h2><p class="muted">为每条主线和副本留下随时可以找到的参考资料。</p></div>
+  <div class="library-list-header"><h3 id="library-current">全部链接</h3><span class="muted">按使用次数排列</span></div>
+  <label for="library-filter">筛选任务</label><select id="library-filter"><option value="">全部链接</option></select>
+  <p id="library-message" role="status" aria-live="polite"></p>
+  <div id="library-list" aria-label="链接列表"></div><button id="library-more" class="button secondary" type="button" hidden>加载更多</button><button id="library-reload" class="button secondary" type="button" hidden>重新读取</button>
+</section>
+<section class="card library-form-panel" aria-labelledby="library-add-heading"><p class="eyebrow">ADD A LINK</p><h2 id="library-add-heading">收藏新链接</h2><p class="muted">关联一条主线或副本，方便以后找到。</p>
+<form id="library-form" class="form-stack"><label for="library-description">描述</label><input id="library-description" maxlength="500" placeholder="例如：Python 官方文档" required>
+<label for="library-url">链接</label><input id="library-url" type="url" maxlength="2048" placeholder="https://example.com" required>
+<label for="library-target">所属任务</label><select id="library-target" required><option value="">请选择主线或副本</option></select><p id="library-form-message" role="status" aria-live="polite"></p><button id="library-submit" class="button primary" type="submit">发送</button></form>
+</section></div>
+{% endblock %}

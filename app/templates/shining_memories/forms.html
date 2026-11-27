@@ -1,0 +1,7 @@
+{# Shared, accessible controls for later people/items/wishes forms. #}
+{% macro field(name, label, type='text', required=false, maxlength=500) %}
+<div class="memory-field"><label for="{{ name }}">{{ label }}</label><input id="{{ name }}" name="{{ name }}" type="{{ type }}" maxlength="{{ maxlength }}" {% if required %}required{% endif %}></div>
+{% endmacro %}
+{% macro image_field(name='memory-image') %}
+<div class="memory-field"><label for="{{ name }}">图片（可选）</label><input id="{{ name }}" name="{{ name }}" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="{{ name }}-hint"><small id="{{ name }}-hint" class="muted">静态JPG、PNG或WebP，最大5MB。</small></div>
+{% endmacro %}

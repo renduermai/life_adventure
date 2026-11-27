@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="{{ url_for('static', path='js/startup.js') }}" defer></script>
+<div class="startup-layout"><section class="card state-panel"><div class="state-intro"><p class="eyebrow">STARTING STATE</p><h2>启动状态坐标轴</h2><p>先定位此刻，再决定下一步。没有错误的状态。</p></div>
+<div class="state-chart" aria-label="横轴心理压力从左到右增加，纵轴能量从下到上增加">
+<div class="quadrant q-focus"><strong>投入区</strong><small>直接行动</small></div><div class="quadrant q-clarity"><strong>降噪区</strong><small>先理清重点</small></div><div class="quadrant q-activate"><strong>激活区</strong><small>从轻松的事开始</small></div><div class="quadrant q-recover"><strong>修复区</strong><small>允许休息与减负</small></div>
+<svg class="state-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="50" y1="0" x2="50" y2="100"/><line x1="0" y1="50" x2="100" y2="50"/><ellipse id="state-dot" cx="50" cy="50" rx="2.4" ry="2.4"/></svg><div id="task-scatter" class="task-scatter" aria-label="独立事项散点"></div></div>
+<div class="axis-label">心理压力 →　（左低 · 右高）　 |　当前能量 ↑　（下低 · 上高）</div>
+<p class="muted scatter-note">大圆点表示此刻的状态，小圆点表示已分析的独立事项。事项点只表示适配象限，象限内排布不代表精确心理数值。</p><div id="item-scatter-detail" class="scatter-detail">分析事项后，可悬停查看详情或点击编辑。</div><div id="item-scatter-tooltip" class="item-scatter-tooltip" role="tooltip" hidden></div>
+<section class="state-calibration" aria-label="当前状态输入"><div class="state-sliders"><label>心理压力 <output id="pressure-output">50</output><input type="range" id="pressure" min="0" max="100" value="50" step="1"></label><label>当前能量 <output id="energy-output">50</output><input type="range" id="energy" min="0" max="100" value="50" step="1"></label></div>
+<p id="state-summary" aria-live="polite"></p><p id="state-message" role="status"></p><button id="state-retry" class="button secondary" type="button" hidden>重试保存当前数值</button></section>
+<section class="startup-items" aria-labelledby="items-heading"><div class="items-heading"><h2 id="items-heading">此刻要做的事情</h2><button id="item-new" type="button" class="button secondary">＋ 新增事情</button></div>
+<p class="muted">先把脑中的事情记下来。</p><p id="items-message" role="status"></p><button id="items-reload" type="button" class="button secondary" hidden>重新读取事项</button>
+<form id="item-form" class="form-stack" hidden><h3 id="item-form-heading">新增事情</h3><label for="item-description">事件描述</label><textarea id="item-description" required maxlength="2000" rows="3"></textarea>
+<div class="state-sliders"><label>重要程度 <output id="item-importance-output">50</output><input type="range" id="item-importance" min="0" max="100" value="50" step="1"><small>0 不重要 · 100 非常重要</small></label><label>紧急程度 <output id="item-urgency-output">50</output><input type="range" id="item-urgency" min="0" max="100" value="50" step="1"><small>0 不紧急 · 100 非常紧急</small></label></div>
+<label for="item-progress">目前完成到哪里了（可选）</label><textarea id="item-progress" maxlength="2000" rows="3"></textarea><p id="item-form-message" role="status"></p><div class="form-row"><button type="submit" class="button primary">保存事情</button><button id="item-cancel" type="button" class="button secondary">取消</button></div></form>
+<div id="items-list"></div><button id="items-more" type="button" class="button secondary" hidden>更多事情</button><p class="muted">分析只发送已保存事项的四项内容；未变化的事项复用结果，可能产生模型费用。</p><button id="items-analyze" type="button" class="button primary">开始分析</button><p id="items-analysis-message" role="status"></p></section>
+<script src="{{ url_for('static', path='js/startup_items.js') }}" defer></script>
+<script src="{{ url_for('static', path='js/item_analysis.js') }}" defer></script>
+<p class="muted">这是一种行动辅助工具，不用于医学或心理疾病诊断。</p></section>
+<aside class="card state-chat" id="chat" tabindex="-1"><h2>AI 助手</h2><p id="chat-mode" class="chat-mode">自由对话</p><div id="chat-target" hidden></div><p class="muted">对话仅在当前标签页暂存，刷新可恢复。新对话会清空；浏览器恢复标签页时也可能恢复记录。</p><div class="form-row"><button id="chat-new" type="button" class="button secondary">新对话</button><button id="chat-free" type="button" class="button secondary" hidden>返回自由对话</button></div>
+<div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+<form id="chat-form" class="form-stack"><label for="chat-input">想聊什么？</label><textarea id="chat-input" maxlength="2000" required placeholder="我现在有点焦虑，不知道先做什么……"></textarea><label class="check-label"><input id="chat-include-tasks" type="checkbox"> 允许本次对话参考我的有效主线、副本摘要</label><p class="muted">发送会将本条消息、必要会话上下文和当前压力/能量交给灵石区模型，可能产生费用。建议步骤可手动复制到左侧新增事情。</p><button type="submit" class="button primary">发送</button></form><p id="chat-status" role="status"></p><script src="{{ url_for('static', path='js/startup_chat.js') }}" defer></script></aside></div>
+{% endblock %}

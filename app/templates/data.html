@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block content %}
+<section class="card form-card"><h2>导出数据</h2><p>下载包含 JSON 和各类 CSV 的数据包，包括已删除记录及奖励流水。数据包包含个人信息，请妥善保存。</p><p>此版本提供数据导出，不提供将文件直接导入数据库的功能。</p><form method="post" action="/data/export"><button class="button primary">下载数据包</button></form></section>
+<section class="card form-card"><h2>恢复误删内容</h2><p>若关联的主线或父任务已删除，请先恢复关联对象。</p>
+<h3>主线</h3>{% for q in quests %}<form method="post" action="/quests/{{ q.id }}/restore"><span>{{ q.title }}</span> <button class="button secondary">恢复主线</button></form>{% else %}<p>无已删除主线</p>{% endfor %}
+<h3>里程碑</h3>{% for m in milestones %}<div><span>{{ m.title }}</span> {% if m.main_quest_id in available %}<form method="post" action="/quests/{{ m.main_quest_id }}/milestones/{{ m.id }}/restore"><button class="button secondary">恢复里程碑</button></form>{% else %}请先恢复主线{% endif %}</div>{% else %}<p>无已删除里程碑</p>{% endfor %}
+<h3>副本</h3>{% for t in tasks %}<p>{{ t.title }} <a class="text-link" href="/tasks/{{ t.id }}">查看并恢复 →</a></p>{% else %}<p>无已删除副本</p>{% endfor %}
+<h3>历练记录</h3>{% for item in logs %}<p>{{ item.occurred_at.strftime('%Y-%m-%d') }} · {{ item.category or '未分类' }} · {{ item.duration_seconds }} 秒 <a class="text-link" href="/journal/{{ item.id }}">查看并恢复 →</a></p>{% else %}<p>无已删除记录</p>{% endfor %}</section>
+{% endblock %}
